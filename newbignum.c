@@ -66,10 +66,6 @@ sum_big(uint64_t *a, uint64_t *b)
 		}
 		else e = 0;
 	}
-	for (int i = 0; i < 2 * t; ++i)
-	{
-		printf("%lu\n", c[i]);
-	}
 	return c;
 }
 
@@ -100,8 +96,6 @@ sub_big(uint64_t *a, uint64_t *b)
 	return c;
 }
 
-
-
 uint64_t*
 mul_big(uint64_t *a, uint64_t *b)
 {
@@ -116,7 +110,6 @@ mul_big(uint64_t *a, uint64_t *b)
 	for (int i = 0; i < t; ++i){
 		hi = 0;
 		for (int j = 0; j < t; ++j){
-			// uint64_t 0xFFFFFFFFFFFFFFFF
 			res = c[i + j] + (a[i] * b[j]) + hi;
 			hi = (res >> 32) & 0xFFFFFFFF;
 			lo = res & 0xFFFFFFFF;
@@ -127,16 +120,36 @@ mul_big(uint64_t *a, uint64_t *b)
 	return c;
 }
 
+uint64_t*
+rshift_big(uint64_t *a)
+{
+	int i = 0;
+	uint64_t *c = (uint64_t*)malloc(sizeof(uint64_t) * DIGIT_SIZE);
+	while(a[i]){
+		c[i] = a[i] >> 1;
+		if((a[i + 1] & 1) == 1){
+			c[i] = (a[i] | 0x100000000) >> 1;
+		}
+		i++;
+	}
+	return c;
+}
+
 int
 main(int argc, char const *argv[])
 {
-	char *num_1 = "1010111111111111110110100011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101010";
-	char *num_2 = "1111111111111111110110101011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
-	uint64_t *big_1 = bin_to_big(num_1);
-	uint64_t *big_3 = bin_to_big(num_2);
-	uint64_t *big_2 = mul_big(big_3, big_1);
+	char *num_1 = "11010111111111111110110100011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
+	//char *num_2 = "1111111111111111110110101011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
+	char *num_3 = "1101011111111111111011010001110101111011111111111100010100111010110001010011101001111110010101110110100001101011111111010101110";
+
+	for (int i = 0; i < 5; ++i)
+	{
+		//printf("%d %lu %lu\n", i, big_1[i], big_1[i] & 1 ? big_3[i] << 1 : big_3[i]);
+		printf("%d %lu %lu\n", i, big_3[i], big_7[i]);
+	}
+	//uint64_t *big_2 = mul_big(big_3, big_1);
 	free(big_1);
-	free(big_2);
+	//free(big_2);
 	free(big_3);
 	return 0;
 }
