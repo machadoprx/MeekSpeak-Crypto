@@ -7,7 +7,7 @@ uint64_t
 bin_to_int(const char *num)
 {
 	uint64_t res = 0;
-	for (int i = 0; i < strlen(num); ++i){
+	for (int i = 0; i < DIGIT_SIZE; ++i){
 		res = res << 1;
 		if(num[i] == '1')
 			res = res | 1;
@@ -19,7 +19,7 @@ char*
 padd_str(const char *str)
 {
 	char *mask = malloc(sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
-	memset(mask, '0', DIGIT_SIZE * DIGIT_SIZE);
+	memset(mask, '0', sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
 	int j = strlen(str) - 1;
 	for (int i = (DIGIT_SIZE * DIGIT_SIZE) - 1; j >= 0; --i){
 		mask[i] = str[j--];
@@ -73,7 +73,6 @@ sub_big(const uint64_t *a, const uint64_t *b)
 	uint64_t *c = malloc(sizeof(uint64_t) * DIGIT_SIZE);
 	int e = 0;
 	int64_t w = a[0] - b[0];
-	//printf("%lu\n", w);
 	if(w < 0){
 		w = w + BASE;
 		e = 1;
@@ -96,7 +95,7 @@ mul_big(const uint64_t *a, const uint64_t *b)
 {
 	int t = DIGIT_SIZE;
 	uint64_t *c = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	memset(c, 0, DIGIT_SIZE);
+	memset(c, 0, sizeof(uint64_t) * DIGIT_SIZE);
 	uint32_t hi = 0, lo = 0;
 	uint64_t res = 0;
 	for (int i = 0; i < t; ++i){
@@ -127,7 +126,8 @@ rshift_big(const uint64_t *a)
 	return c;
 }
 
-bool ge_than_big(const uint64_t *a, const uint64_t *b)
+bool 
+ge_than_big(const uint64_t *a, const uint64_t *b)
 {
 	for (int i = DIGIT_SIZE - 1; i >= 0; i--){
 		if (a[i] < b[i]){
@@ -141,16 +141,11 @@ bool ge_than_big(const uint64_t *a, const uint64_t *b)
 uint64_t*
 fastred_p224_mod_big(const uint64_t *a, const uint64_t *p)
 {
-	uint64_t *s_1 = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	uint64_t *s_2 = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	uint64_t *s_3 = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	uint64_t *s_4 = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	uint64_t *s_5 = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	memset(s_1, 0, DIGIT_SIZE);
-	memset(s_2, 0, DIGIT_SIZE);
-	memset(s_3, 0, DIGIT_SIZE);
-	memset(s_4, 0, DIGIT_SIZE);
-	memset(s_5, 0, DIGIT_SIZE);
+	uint64_t *s_1 = calloc(sizeof(uint64_t), DIGIT_SIZE);
+	uint64_t *s_2 = calloc(sizeof(uint64_t), DIGIT_SIZE);
+	uint64_t *s_3 = calloc(sizeof(uint64_t), DIGIT_SIZE);
+	uint64_t *s_4 = calloc(sizeof(uint64_t), DIGIT_SIZE);
+	uint64_t *s_5 = calloc(sizeof(uint64_t), DIGIT_SIZE);
 	for (int i = 0; i < 7; ++i){
 		s_1[i] = a[i];
 	}
@@ -173,16 +168,11 @@ fastred_p224_mod_big(const uint64_t *a, const uint64_t *p)
 	
 	while(ge_than_big(res, p) == true){
 		uint64_t *tmp = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-		for (int i = 0; i < DIGIT_SIZE; ++i)
-			tmp[i] = res[i];
+		memcpy(tmp, res, sizeof(uint64_t) * DIGIT_SIZE);
 		free(res);
 		res = sub_big(tmp, p);
 		free(tmp);
 	}
-	/*
-	for (int i = 0; i < DIGIT_SIZE; ++i){
-		printf("%d res: %lu p: %lu\n", i, res[i], p[i]);
-	}*/
 
 	free(s_1);
 	free(s_2);
@@ -199,29 +189,15 @@ fastred_p224_mod_big(const uint64_t *a, const uint64_t *p)
 int
 main(int argc, char const *argv[])
 {
-	/*
-	char *num_1 = "11010111111111111110110100011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
-	char *num_2 = "1101011111111111111011010001110101111011111111111100010100111010110001010011101001111110010101110110100001101011111111010101110101";
-	uint64_t *big_1 = bin_to_big(num_1);
-	uint64_t *big_2 = bin_to_big(num_2);
-	uint64_t *big_3 = rshift_big(big_1);
-	for (int i = 0; i < 5; ++i)
-	{
-		printf("%d %lu\n", i, big_3[i]);
-	}
-	free(big_1);
-	free(big_2);
-	free(big_3);*/
 	char *p = "11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
 	uint64_t *prime = bin_to_big(p);
-	char *test = "1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111";
-	uint64_t *test_b = bin_to_big(test);
+	uint64_t *test_b = bin_to_big("10000001100000110101100000010001001111101011101111011110101110000010010100110010011111101001100100011100010010110110010110111000110110111100110011010010110111000111111000000110001001111011000110110110101101001100100101010100001011011000111110100110000100000011100011011");
 	uint64_t *res = fastred_p224_mod_big(test_b, prime);
 	// res must be: 11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111011111111111111111111111111111111
-	uint64_t *test_bmodp224 = bin_to_big("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111011111111111111111111111111111111");
+	uint64_t *test_bmodp224 = bin_to_big("1111011110101110000010010100110010011111101001100100011100010010110110010110111001010111010101000000101010111011011011110010111110001001111011000110110110101101001100100101010011101011000000110001001101111111101111101000100");
 	for (int i = 0; i < DIGIT_SIZE; ++i)
 	{
-		printf("%d %lu\n", i, test_bmodp224[i]);
+		printf("%d %lu %lu\n", i, test_bmodp224[i], res[i]);
 	}
 	free(res);
 	free(test_bmodp224);
