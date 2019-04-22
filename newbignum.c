@@ -1,7 +1,7 @@
 #include "newbignum.h"
 #include <string.h>
 #define DIGIT_SIZE 32
-#define BASE 4294967296
+#define BASE 0x100000000
 
 uint64_t
 bin_to_int(char *num)
@@ -55,17 +55,17 @@ sum_big(uint64_t *a, uint64_t *b)
 	int e = 0;
 	uint64_t w = a[0] + b[0];
 	c[0] = w % BASE;
-	if(w > BASE){
+	if (w > BASE)
 		e = 1;
-	}
 	for (int i = 1; i < t; ++i){
+		printf("%d\n", e);
 		w = e + a[i] + b[i];
 		c[i] = w % BASE;
-		if(w > BASE){
+		if (w > BASE)
 			e = 1;
-		}
 		else e = 0;
 	}
+	printf("%d\n", e);
 	return c;
 }
 
@@ -139,17 +139,17 @@ int
 main(int argc, char const *argv[])
 {
 	char *num_1 = "11010111111111111110110100011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
-	//char *num_2 = "1111111111111111110110101011101011110111111111111000101001110101100010100111010011111100101011101101000011010111111110101011101011";
-	char *num_3 = "1101011111111111111011010001110101111011111111111100010100111010110001010011101001111110010101110110100001101011111111010101110";
-
+	char *num_2 = "110101111111111111101101000111010111101111111111110001010011101011000101001110100111111001010111011010000110101111111101010111";
+	uint64_t *big_1 = bin_to_big(num_1);
+	uint64_t *big_2 = bin_to_big(num_2);
+	uint64_t *big_3 = sum_big(big_1, big_2);
 	for (int i = 0; i < 5; ++i)
 	{
-		//printf("%d %lu %lu\n", i, big_1[i], big_1[i] & 1 ? big_3[i] << 1 : big_3[i]);
-		printf("%d %lu %lu\n", i, big_3[i], big_7[i]);
+		printf("%d %lu\n", i, big_3[i]);
 	}
-	//uint64_t *big_2 = mul_big(big_3, big_1);
 	free(big_1);
-	//free(big_2);
+	free(big_2);
 	free(big_3);
+
 	return 0;
 }
