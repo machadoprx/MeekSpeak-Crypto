@@ -45,6 +45,39 @@ big_gth(const big_t *a, const big_t *b)
 {
 	if(a->value == NULL || b->value == NULL)
 		return 0;
+	if(a->sign == false && b->sign == false){
+		for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+			if(a->value[i] < b->value[i])
+				return 0;
+			else 
+				if(a->value[i] > b->value[i]) 
+					return 2;
+		}
+		return 1;
+	}
+	else
+		if(a->sign == true && b->sign == true){
+			for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+				if(a->value[i] > b->value[i])
+					return 0;
+				else 
+					if(a->value[i] < b->value[i]) 
+						return 2;
+			}
+			return 1;
+		}
+	else
+		if(a->sign == false && b->sign == true)
+			return 2;
+	else
+		return 0;
+}
+
+int 
+big_gth_uns(const big_t *a, const big_t *b)
+{
+	if(a->value == NULL || b->value == NULL)
+		return 0;
 	for(int i = DIGIT_SIZE - 1; i >= 0; i--){
 		if(a->value[i] < b->value[i])
 			return 0;
@@ -91,7 +124,21 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 {
 	if(a == NULL || b == NULL || r == NULL)
 		return;
-
+	if(a->sign != b->sign){
+		big_t *a1 = big_new();
+		big_cpy(a, a1);
+		a1->sign = false;
+		big_t *b1 = big_new();
+		big_cpy(b, b1);
+		b1->sign = false;
+		if(a->sign == false)
+			big_sub(a1, b1, r);
+		else
+			big_sub(b1, a1, r);
+		big_free(a1);
+		big_free(b1);
+		return;
+	}
 	big_null(r);
 	int e = 0;
 	uint64_t w = a->value[0] + b->value[0];
@@ -102,6 +149,8 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 		r->value[i] = w % BASE;
 		e = (int)(w / BASE);
 	}
+	if(a->sign == true)
+		r->sign = true;
 }
 
 void
@@ -109,11 +158,43 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 {
 	if(a == NULL || b == NULL || r == NULL)
 		return;
+	if(a->sign != b->sign){
+		big_t *a1 = big_new();
+		big_cpy(a, a1);
+		a1->sign = false;
+		big_t *b1 = big_new();
+		big_cpy(b, b1);
+		b1->sign = false;
+		big_sum(a1, b1, r);
+		if(a->sign == true)
+			r->sign = true;
+		big_free(a1);
+		big_free(b1);
+		return;
+	}
+	if(a->sign == true){
+		big_t *a1 = big_new();
+		big_cpy(a, a1);
+		a1->sign = false;
+		big_t *b1 = big_new();
+		big_cpy(b, b1);
+		b1->sign = false;
+		big_sub(b1, a1, r);
+		big_free(a1);
+		big_free(b1);
+		return;
+	}
+	bool gth = false;
+	if(big_gth_uns(a, b) > 0)
+		gth = true;
 
 	big_null(r);
 	int e = 0;
 	int64_t w = 0;
-	w = a->value[0] - b->value[0];
+	if(gth == true)
+		w = a->value[0] - b->value[0];
+	else
+		w = b->value[0] - a->value[0];
 	if(w < 0){
 		w = w + BASE;
 		e = 1;
@@ -121,6 +202,10 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 	r->value[0] = w % BASE;
 	for(int i = 1; i < DIGIT_SIZE; ++i){
 		w = a->value[i] - b->value[i] - e;
+		if(gth == true)
+			w = a->value[i] - b->value[i] - e;
+		else
+			w = b->value[i] - a->value[i] - e;
 		if(w < 0){
 			w = w + BASE;
 			e = 1;
@@ -129,6 +214,10 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 			e = 0;
 		r->value[i] = w % BASE;
 	}
+	if(gth == true)
+		r->sign = false;
+	else
+		r->sign = true;
 }
 
 void
@@ -151,12 +240,15 @@ big_mul(const big_t *a, const big_t *b, big_t *r)
 		}
 		r->value[i + t] = hi;
 	}
+	r->sign = (a->sign ^ b->sign);
 }
 
 bool 
 big_eql(const big_t *a, const big_t *b)
 {
 	if(a == NULL || b == NULL)
+		return false;
+	if(a->sign != b->sign)
 		return false;
 
 	for(int i = DIGIT_SIZE - 1; i >= 0; i--)
@@ -172,12 +264,6 @@ big_rst(const big_t *a, big_t *r)
 		return;
 
 	big_null(r);
-	big_t *zero = big_new();
-	bin_to_big("0", zero);
-	if(big_eql(a, zero)) 
-		return;
-	big_free(zero);
-
 	int lsb = 0;
 	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
 		r->value[i] = a->value[i] >> 1;
@@ -185,6 +271,7 @@ big_rst(const big_t *a, big_t *r)
 			r->value[i] = (a->value[i] | 0x100000000) >> 1;
 		lsb = a->value[i] & 1;
 	}
+	r->sign = a->sign;
 }
 
 void
@@ -205,12 +292,13 @@ big_to_hex(const big_t *a)
 	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
 		if(a->value[i] > 0xFFFFFFF)
 			printf("%lx", a->value[i]);
-		else if(a->value[i] == 0)
-			printf("000000000");
+		else 
+			if(a->value[i] == 0)
+				fputs("000000000", stdout);
 		else
 			printf("0%lx", a->value[i]);
 	}
-	printf("\n");
+	fputs("\n", stdout);
 }
 
 void
@@ -288,31 +376,15 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 	bin_to_big("0", x2);
 	big_t *one = big_new(); 
 	bin_to_big("1", one);
-	int x1_sign = 0, x2_sign = 0;
 
 	while(!big_eql(u, one) && !big_eql(v, one)){
-		//big_to_hex(x1);
 		while(!big_odd(u)){
 			big_t *tmp = big_new();
 			big_rst(u, tmp);
 			big_cpy(tmp, u);
-			big_null(tmp);
 			if(big_odd(x1)){
-				if(x1_sign == 1){
-					if(big_gth(b, x1) > 0){
-						big_sub(b, x1, tmp);
-						x1_sign = 0;
-					}
-					else{
-						big_sub(x1, b, tmp);
-						x1_sign = 1;
-					}
-				}
-				else
-					big_sum(x1, b, tmp);
-				
+				big_sum(x1, b, tmp);
 				big_cpy(tmp, x1);
-				big_null(tmp);
 			}
 			big_rst(x1, tmp);
 			big_cpy(tmp, x1);
@@ -322,23 +394,9 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 			big_t *tmp = big_new(); 
 			big_rst(v, tmp);
 			big_cpy(tmp, v);
-			big_null(tmp);
 			if(big_odd(x2)){
-				if(x2_sign == 1){
-					if(big_gth(b, x2) > 0){
-						big_sub(b, x2, tmp);
-						x2_sign = 0;
-					}
-					else{
-						big_sub(x2, b, tmp);
-						x2_sign = 1;
-					}
-				}
-				else
-					big_sum(x2, b, tmp);
-
+				big_sum(x2, b, tmp);
 				big_cpy(tmp, x2);
-				big_null(tmp);
 			}
 			big_rst(x2, tmp);
 			big_cpy(tmp, x2);
@@ -348,26 +406,7 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 			big_t *tmp = big_new();
 			big_sub(u, v, tmp);
 			big_cpy(tmp, u);
-			big_null(tmp);
-			if(x1_sign == 1 && x2_sign == 0){
-				big_sum(x1, x2, tmp);
-				x1_sign = 1;
-			}
-			else
-				if(x1_sign == 0 && x2_sign == 1){
-					big_sum(x1, x2, tmp);
-					x1_sign = 0;
-				}
-			else{
-				if(big_gth(x1, x2) > 0){
-					big_sub(x1, x2, tmp);
-					x1_sign = 0;
-				}
-				else{
-					big_sub(x2, x1, tmp);
-					x1_sign = 1;
-				}
-			}
+			big_sub(x1, x2, tmp);
 			big_cpy(tmp, x1);
 			big_free(tmp);
 		}
@@ -375,26 +414,7 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 			big_t *tmp = big_new();
 			big_sub(v, u, tmp);
 			big_cpy(tmp, v);
-			big_null(tmp);
-			if(x1_sign == 1 && x2_sign == 0){
-				big_sum(x1, x2, tmp);
-				x2_sign = 0;
-			}
-			else
-				if(x1_sign == 0 && x2_sign == 1){
-					big_sum(x1, x2, tmp);
-					x2_sign = 1;
-				}
-			else{
-				if(big_gth(x2, x1) > 0){
-					big_sub(x2, x1, tmp);
-					x2_sign = 0;
-				}
-				else{
-					big_sub(x1, x2, tmp);
-					x2_sign = 1;
-				}
-			}
+			big_sub(x2, x1, tmp);
 			big_cpy(tmp, x2);
 			big_free(tmp);
 		}
@@ -419,11 +439,21 @@ main(int argc, char const *argv[])
 	bin_to_big("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", p224);
 	big_t *a = big_new();
 	bin_to_big("1001100011010101111100011100101110100101010110001011111110001111001101", a);
+	
 	big_t *sum = big_new();
 	big_mod_inv(a, p224, sum);
 	big_to_hex(sum);
 	big_free(a);
 	big_free(p224);
 	big_free(sum);
+	/*
+	big_t *one = big_new();
+	bin_to_big("1", one);
+	big_t *two = big_new();
+	bin_to_big("10", two);
+	big_t *sub = big_new();
+	big_sub(two, one, sub);
+	big_to_hex(sub);*/
+	//printf("2 > , 1 ==, 0 < : %d\n", big_gth(one, two));
 	return 0;
 }

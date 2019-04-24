@@ -17,3 +17,7 @@ struct _big_t{
 };
 
 typedef struct _big_t big_t;
+
+void big_sub(const big_t *, const big_t *, big_t *);
+void big_sum(const big_t *, const big_t *, big_t *);
+void big_cpy(const big_t *a, big_t *r);
