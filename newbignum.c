@@ -1,403 +1,429 @@
 #include "newbignum.h"
 
-uint64_t
+big_t*
+big_new()
+{
+	big_t *t = malloc(sizeof(struct _big_t));
+	t->value = malloc(WORD_LENGHT);
+	memset(t->value, 0, WORD_LENGHT);
+	t->bits_lenght = 0;
+	t->sign = false;
+	return t;
+}
+
+void
+big_free(big_t *a)
+{
+	if(a == NULL) 
+		return;
+	free(a->value);
+	free(a);
+}
+
+static void
+big_null(big_t *a)
+{
+	memset(a->value, 0, WORD_LENGHT);
+	a->bits_lenght = 0;
+	a->sign = false;
+}
+
+static uint64_t
 bin_to_int(const char *num)
 {
-	uint64_t res = 0;
-	for (int i = 0; i < DIGIT_SIZE; ++i){
-		res = res << 1;
+	uint64_t r = 0;
+	for(int i = 0; i < DIGIT_SIZE; ++i){
+		r = r << 1;
 		if(num[i] == '1')
-			res = res | 1;
+			r = r | 1;
 	}
-	return res;
+	return r;
 }
 
 int 
-ge_than_big(const uint64_t *a, const uint64_t *b)
+big_gth(const big_t *a, const big_t *b)
 {
-	for (int i = DIGIT_SIZE - 1; i >= 0; i--){
-		if (a[i] < b[i]){
+	if(a->value == NULL || b->value == NULL)
+		return 0;
+	for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+		if(a->value[i] < b->value[i])
 			return 0;
-		}
-		else if(a[i] > b[i]) return 2;
+		else 
+			if(a->value[i] > b->value[i]) 
+				return 2;
 	}
 	return 1;
 }
 
-char*
+static char*
 padd_str(const char *str)
 {
 	char *mask = malloc(sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
 	memset(mask, '0', sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
 	int j = strlen(str) - 1;
-	for (int i = (DIGIT_SIZE * DIGIT_SIZE) - 1; j >= 0; --i){
+	for(int i = (DIGIT_SIZE * DIGIT_SIZE) - 1; j >= 0; --i){
 		mask[i] = str[j--];
 	}
 	return mask;
 }
 
-uint64_t*
-bin_to_big(const char *source)
+void
+bin_to_big(const char *src, big_t *r)
 {
-	char *num = padd_str(source);
-	uint64_t *big = malloc(sizeof(uint64_t) * DIGIT_SIZE);
-	for (int i = 0; i < DIGIT_SIZE; ++i){
+	if(src == NULL || r == NULL)
+		return;
+
+	big_null(r);
+	char *num = padd_str(src);
+	for(int i = 0; i < DIGIT_SIZE; ++i){
 		char *digit = malloc(sizeof(char) * DIGIT_SIZE);
-		for (int j = DIGIT_SIZE * i, m = 0; j < DIGIT_SIZE * (i + 1); ++j){
+		for(int j = DIGIT_SIZE * i, m = 0; j < DIGIT_SIZE * (i + 1); ++j){
 			digit[m++] = num[j];
 		}
-		big[(DIGIT_SIZE - 1) - i] = bin_to_int(digit);
-		//big[(digits - 1) - i] = strtoull(digit, &n, 2);
+		r->value[(DIGIT_SIZE - 1) - i] = bin_to_int(digit);
 		free(digit);
 	}
 	free(num);
-	return big;
 }
 
-uint64_t*
-sum_big(const uint64_t *a, const uint64_t *b)
+void
+big_sum(const big_t *a, const big_t *b, big_t *r)
 {
-	int t = DIGIT_SIZE;
-	uint64_t *c = malloc(WORD_LENGHT);
+	if(a == NULL || b == NULL || r == NULL)
+		return;
+
+	big_null(r);
 	int e = 0;
-	uint64_t w = a[0] + b[0];
-	c[0] = w % BASE;
+	uint64_t w = a->value[0] + b->value[0];
+	r->value[0] = w % BASE;
 	e = (int)(w / BASE);
-	for (int i = 1; i < t; ++i){
-		w = e + a[i] + b[i];
-		c[i] = w % BASE;
+	for(int i = 1; i < DIGIT_SIZE; ++i){
+		w = e + a->value[i] + b->value[i];
+		r->value[i] = w % BASE;
 		e = (int)(w / BASE);
 	}
-	if(e == 1){
-		c[t] += 1;
-	}
-	return c;
 }
 
-uint64_t*
-sub_big(const uint64_t *a, const uint64_t *b)
+void
+big_sub(const big_t *a, const big_t *b, big_t *r)
 {
-	int t = DIGIT_SIZE;
-	uint64_t *c = malloc(WORD_LENGHT);
+	if(a == NULL || b == NULL || r == NULL)
+		return;
+
+	big_null(r);
 	int e = 0;
 	int64_t w = 0;
-	w = a[0] - b[0];
+	w = a->value[0] - b->value[0];
 	if(w < 0){
 		w = w + BASE;
 		e = 1;
 	}
-	c[0] = w % BASE;
-	for (int i = 1; i < t; ++i){
-		w = a[i] - b[i] - e;
+	r->value[0] = w % BASE;
+	for(int i = 1; i < DIGIT_SIZE; ++i){
+		w = a->value[i] - b->value[i] - e;
 		if(w < 0){
 			w = w + BASE;
 			e = 1;
 		}
-		else e = 0;
-		c[i] = w % BASE;
+		else 
+			e = 0;
+		r->value[i] = w % BASE;
 	}
-	return c;
 }
 
-uint64_t*
-mul_big(const uint64_t *a, const uint64_t *b)
+void
+big_mul(const big_t *a, const big_t *b, big_t *r)
 {
+	if(a == NULL || b == NULL || r == NULL)
+		return;
+
+	big_null(r);
 	int t = DIGIT_SIZE;
-	uint64_t *c = malloc(WORD_LENGHT);
-	memset(c, 0, WORD_LENGHT);
 	uint64_t temp;
 	uint64_t hi = 0, lo = 0;
-	for (int i = 0; i < t; ++i){
+	for(int i = 0; i < DIGIT_SIZE; ++i){
 		hi = 0;
-		for (int j = 0; j < t; ++j){
-			temp = c[i + j] + (a[i] * b[j]) + hi;
+		for(int j = 0; j < t; ++j){
+			temp = r->value[i + j] + (a->value[i] * b->value[j]) + hi;
 			hi = (temp >> 32) & 0xFFFFFFFF;
 			lo = temp & 0xFFFFFFFF;
-			c[i + j] = lo;
+			r->value[i + j] = lo;
 		}
-		c[i + t] = hi;
+		r->value[i + t] = hi;
 	}
-	return c;
 }
 
 bool 
-equal_big(const uint64_t *a, const uint64_t *b)
+big_eql(const big_t *a, const big_t *b)
 {
-	for (int i = DIGIT_SIZE - 1; i >= 0; i--)
-		if (a[i] != b[i])
+	if(a == NULL || b == NULL)
+		return false;
+
+	for(int i = DIGIT_SIZE - 1; i >= 0; i--)
+		if (a->value[i] != b->value[i])
 			return false;
 	return true;
 }
 
-uint64_t*
-rshift_big(const uint64_t *a)
+void
+big_rst(const big_t *a, big_t *r)
 {
-	uint64_t *zero = bin_to_big("0");
-	if(equal_big(a, zero)) return zero;
-	int i = DIGIT_SIZE - 1;
-	uint64_t *c = malloc(WORD_LENGHT);
+	if(a == NULL || r == NULL)
+		return;
+
+	big_null(r);
+	big_t *zero = big_new();
+	bin_to_big("0", zero);
+	if(big_eql(a, zero)) 
+		return;
+	big_free(zero);
+
 	int lsb = 0;
-	while(i >= 0){
-		c[i] = a[i] >> 1;
-		if(lsb == 1){
-			c[i] = (a[i] | 0x100000000) >> 1;
-		}
-		lsb = a[i] & 1;
-		i--;
+	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
+		r->value[i] = a->value[i] >> 1;
+		if(lsb == 1)
+			r->value[i] = (a->value[i] | 0x100000000) >> 1;
+		lsb = a->value[i] & 1;
 	}
-	free(zero);
-	return c;
 }
 
 void
-big_to_hex(const uint64_t *a)
+big_cpy(const big_t *a, big_t *r)
+{
+	if(a == NULL || r == NULL)
+		return;
+
+	memcpy(r->value, a->value, WORD_LENGHT);
+	r->bits_lenght = a->bits_lenght;
+	r->sign = a->sign;
+}
+
+void
+big_to_hex(const big_t *a)
 {
 	printf("0x");
-	for (int i = DIGIT_SIZE - 1; i >= 0; --i){
-		if(a[i] > 0xFFFFFFF)
-			printf("%lx", a[i]);
-		else if(a[i] == 0)
+	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
+		if(a->value[i] > 0xFFFFFFF)
+			printf("%lx", a->value[i]);
+		else if(a->value[i] == 0)
 			printf("000000000");
-		else if(a[i] <= 0xFFFFFFF)
-			printf("0%lx", a[i]);
+		else
+			printf("0%lx", a->value[i]);
 	}
 	printf("\n");
 }
 
-uint64_t*
-fast_p224_mod_big(const uint64_t *a, const uint64_t *p)
+void
+big_fst_p224_mod(const big_t *a, big_t *r)
 {
-	uint64_t *s_1 = malloc(WORD_LENGHT);
-	uint64_t *s_2 = malloc(WORD_LENGHT);
-	uint64_t *s_3 = malloc(WORD_LENGHT);
-	uint64_t *s_4 = malloc(WORD_LENGHT);
-	uint64_t *s_5 = malloc(WORD_LENGHT);
-	memset(s_1, 0, WORD_LENGHT);
-	memset(s_2, 0, WORD_LENGHT);
-	memset(s_3, 0, WORD_LENGHT);
-	memset(s_4, 0, WORD_LENGHT);
-	memset(s_5, 0, WORD_LENGHT);
-	for (int i = 0; i < 7; ++i){
-		s_1[i] = a[i];
+	if(a == NULL || r == NULL)
+		return;
+
+	big_null(r);
+	big_t *p = big_new(); bin_to_big(P224, p);
+	big_t *s_1;	s_1 = big_new();
+	big_t *s_2;	s_2 = big_new();
+	big_t *s_3;	s_3 = big_new();
+	big_t *s_4;	s_4 = big_new();
+	big_t *s_5;	s_5 = big_new();
+
+	int i = 0;
+	for(i = 0; i < 7; ++i){
+		s_1->value[i] = a->value[i];
+		s_4->value[i] = a->value[i + 7];
 	}
-	for (int i = 3; i < 7; ++i){
-		s_2[i] = a[i + 4];
-	}
-	for (int i = 3; i < 6; ++i){
-		s_3[i] = a[i + 8];
-	}
-	for (int i = 0; i < 7; ++i){
-		s_4[i] = a[i + 7];
-	}
-	for (int i = 0; i < 3; ++i){
-		s_5[i] = a[i + 11];
-	}
-	int sign = 0;
-	uint64_t *sum_1 = sum_big(s_1, s_2);
-	uint64_t *sum_2 = sum_big(sum_1, s_3);
-	uint64_t *sub_1 = sub_big(sum_2, s_4);
-	uint64_t *res = sub_big(sub_1, s_5);
-	
-	while(ge_than_big(res, p)){
-		uint64_t *tmp;
-		tmp = sub_big(res, p);
-		memcpy(res, tmp, WORD_LENGHT);
-		free(tmp);
+	for(i = 3; i < 7; ++i)
+		s_2->value[i] = a->value[i + 4];
+	for(i = 3; i < 6; ++i)
+		s_3->value[i] = a->value[i + 8];
+	for(i = 0; i < 3; ++i)
+		s_5->value[i] = a->value[i + 11];
+
+	big_t *sum_1 = big_new();
+	big_sum(s_1, s_2, sum_1);
+	big_t *sum_2 = big_new();
+	big_sum(sum_1, s_3, sum_2);
+	big_t *sub_1 = big_new();
+	big_sub(sum_2, s_4, sub_1);
+	big_sub(sub_1, s_5, r);
+
+	while(big_gth(r, p)){
+		big_t *tmp = big_new();
+		big_sub(r, p, tmp);
+		big_cpy(tmp, r);
+		big_free(tmp);
 	}
 
-	free(s_1);
-	free(s_2);
-	free(s_3);
-	free(s_4);
-	free(s_5);
-	free(sum_1);
-	free(sum_2);
-	free(sub_1);
-	return res;
+	big_free(p);
+	big_free(s_1); big_free(s_2);
+	big_free(s_3); big_free(s_4);
+	big_free(s_5); big_free(sum_1);
+	big_free(sum_2); big_free(sub_1);
 }
 
-uint64_t *mod_inv_big(uint64_t *a, uint64_t *p)
+bool
+big_odd(const big_t *a)
 {
-	// verify if a < p
-	uint64_t *u = malloc(WORD_LENGHT);
-	memcpy(u, a, WORD_LENGHT);
-	uint64_t *v = malloc(WORD_LENGHT);
-	memcpy(v, p, WORD_LENGHT);
-	uint64_t *x_1 = bin_to_big("1");
-	uint64_t *x_2 = bin_to_big("0");
-	uint64_t *one = bin_to_big("1");
-	int x_1_sign = 0;
-	int x_2_sign = 0;
-	while(!equal_big(u, one) && !equal_big(v, one)){
-		while((u[0] & 1) == 0){
-			uint64_t *tmp;
-			tmp = rshift_big(u);
-			memcpy(u, tmp, WORD_LENGHT);
-			memset(tmp, 0, WORD_LENGHT);
-			free(tmp);
-			if((x_1[0] & 1) == 0){
-				tmp = rshift_big(x_1);
-				memcpy(x_1, tmp, WORD_LENGHT);
-				memset(tmp, 0, WORD_LENGHT);
-				free(tmp);
-			}
-			else{
-				// x_1 = x_1 + p
-				if(x_1_sign == 1){
-					// x_1 = (-x_1) + p
-					if(ge_than_big(p, x_1) > 0){
-						tmp = sub_big(p, x_1);
-						x_1_sign = 0;
+	if(a == NULL)
+		return false;
+	return (a->value[0] & 1);
+}
+
+void
+big_mod_inv(const big_t *a, const big_t *b, big_t *r)
+{
+	if(a == NULL || b == NULL || r == NULL)
+		return;
+	if(big_gth(a, b))
+		return;
+
+	big_null(r);
+	big_t *u = big_new(); 
+	big_cpy(a, u);
+	big_t *v = big_new(); 
+	big_cpy(b, v);
+	big_t *x1 = big_new(); 
+	bin_to_big("1", x1);
+	big_t *x2 = big_new();
+	bin_to_big("0", x2);
+	big_t *one = big_new(); 
+	bin_to_big("1", one);
+	int x1_sign = 0, x2_sign = 0;
+
+	while(!big_eql(u, one) && !big_eql(v, one)){
+		//big_to_hex(x1);
+		while(!big_odd(u)){
+			big_t *tmp = big_new();
+			big_rst(u, tmp);
+			big_cpy(tmp, u);
+			big_null(tmp);
+			if(big_odd(x1)){
+				if(x1_sign == 1){
+					if(big_gth(b, x1) > 0){
+						big_sub(b, x1, tmp);
+						x1_sign = 0;
 					}
 					else{
-						tmp = sub_big(x_1, p);
-						x_1_sign = 1;
+						big_sub(x1, b, tmp);
+						x1_sign = 1;
 					}
 				}
-				else{
-					tmp = sum_big(x_1, p);
-				}
-				memcpy(x_1, tmp, WORD_LENGHT);
-				free(tmp);
-				tmp = rshift_big(x_1);
-				memcpy(x_1, tmp, WORD_LENGHT);
-				free(tmp);
+				else
+					big_sum(x1, b, tmp);
+				
+				big_cpy(tmp, x1);
+				big_null(tmp);
 			}
+			big_rst(x1, tmp);
+			big_cpy(tmp, x1);
+			big_free(tmp);
 		}
-		while((v[0] & 1) == 0){
-			uint64_t *tmp;
-			tmp = rshift_big(v);
-			memcpy(v, tmp, WORD_LENGHT);
-			free(tmp);
-			if((x_2[0] & 1) == 0){
-				tmp = rshift_big(x_2);
-				memcpy(x_2, tmp, WORD_LENGHT);
-				free(tmp);
-			}
-			else{
-				if(x_2_sign == 1){
-					if(ge_than_big(p, x_2) > 0){
-						tmp = sub_big(p, x_2);
-						x_2_sign = 0;
+		while(!big_odd(v)){
+			big_t *tmp = big_new(); 
+			big_rst(v, tmp);
+			big_cpy(tmp, v);
+			big_null(tmp);
+			if(big_odd(x2)){
+				if(x2_sign == 1){
+					if(big_gth(b, x2) > 0){
+						big_sub(b, x2, tmp);
+						x2_sign = 0;
 					}
 					else{
-						tmp = sub_big(x_2, p);
-						x_2_sign = 1;
+						big_sub(x2, b, tmp);
+						x2_sign = 1;
 					}
 				}
-				else{
-					tmp = sum_big(p, x_2);
-				}
-				memcpy(x_2, tmp, WORD_LENGHT);
-				memset(tmp, 0, WORD_LENGHT);
-				free(tmp);
-				tmp = rshift_big(x_2);
-				memcpy(x_2, tmp, WORD_LENGHT);
-				memset(tmp, 0, WORD_LENGHT);
-				free(tmp);
+				else
+					big_sum(x2, b, tmp);
+
+				big_cpy(tmp, x2);
+				big_null(tmp);
 			}
+			big_rst(x2, tmp);
+			big_cpy(tmp, x2);
+			big_free(tmp);
 		}
-		if(ge_than_big(u, v) > 0){
-			uint64_t *tmp = sub_big(u, v);
-			memcpy(u, tmp, WORD_LENGHT);
-			memset(tmp, 0, WORD_LENGHT);
-			free(tmp);
-			// x_1 = +x_1 - +x_2
-			if(x_1_sign == 1 && x_2_sign == 0){
-				// operation (-x_1) - (x_2)
-				// x_1 = -x_1 - x_2
-				tmp = sum_big(x_1, x_2);
-				x_1_sign = 1;
+		if(big_gth(u, v) > 0){
+			big_t *tmp = big_new();
+			big_sub(u, v, tmp);
+			big_cpy(tmp, u);
+			big_null(tmp);
+			if(x1_sign == 1 && x2_sign == 0){
+				big_sum(x1, x2, tmp);
+				x1_sign = 1;
 			}
-			else if(x_1_sign == 0 && x_2_sign == 1){
-				// operation (x_1) - (-x_2)
-				// x_1 = x_1 + x_2
-				tmp = sum_big(x_1, x_2);
-				x_1_sign = 0;
-			}
+			else
+				if(x1_sign == 0 && x2_sign == 1){
+					big_sum(x1, x2, tmp);
+					x1_sign = 0;
+				}
 			else{
-				// operation (x_1) - (x_2)
-				// x_1 = x_1 - x_2
-				if(ge_than_big(x_1, x_2) > 0){
-					tmp = sub_big(x_1, x_2);
-					x_1_sign = 0;
+				if(big_gth(x1, x2) > 0){
+					big_sub(x1, x2, tmp);
+					x1_sign = 0;
 				}
 				else{
-					tmp = sub_big(x_2, x_1);
-					x_1_sign = 1;
+					big_sub(x2, x1, tmp);
+					x1_sign = 1;
 				}
 			}
-			memcpy(x_1, tmp, WORD_LENGHT);
-			memset(tmp, 0, WORD_LENGHT);
-			free(tmp);
+			big_cpy(tmp, x1);
+			big_free(tmp);
 		}
 		else{
-			int sign_t;
-			uint64_t *tmp = sub_big(v, u);
-			memcpy(v, tmp, WORD_LENGHT);
-			memset(tmp, 0, WORD_LENGHT);
-			free(tmp);
-			// x_2 = x_2 - x_1
-			if(x_1_sign == 1 && x_2_sign == 0){
-				// operation (x_2) - (-x_1)
-				// x_2 = x_1 + x_2
-				tmp = sum_big(x_1, x_2);
-				x_2_sign = 0;
+			big_t *tmp = big_new();
+			big_sub(v, u, tmp);
+			big_cpy(tmp, v);
+			big_null(tmp);
+			if(x1_sign == 1 && x2_sign == 0){
+				big_sum(x1, x2, tmp);
+				x2_sign = 0;
 			}
-			else if(x_1_sign == 0 && x_2_sign == 1){
-				// operation (-x_2) - (x_1)
-				// x_2 = -x_1 - x_2
-				tmp = sum_big(x_1, x_2);
-				x_2_sign = 1;
-			}
+			else
+				if(x1_sign == 0 && x2_sign == 1){
+					big_sum(x1, x2, tmp);
+					x2_sign = 1;
+				}
 			else{
-				// operation (x_2) - (x_1)
-				// x_2 = x_2 - x_1
-				if(ge_than_big(x_2, x_1) >= 1){
-					tmp = sub_big(x_2, x_1);
-					x_2_sign = 0;
+				if(big_gth(x2, x1) > 0){
+					big_sub(x2, x1, tmp);
+					x2_sign = 0;
 				}
 				else{
-					tmp = sub_big(x_1, x_2);
-					x_2_sign = 1;
+					big_sub(x1, x2, tmp);
+					x2_sign = 1;
 				}
 			}
-			memcpy(x_2, tmp, WORD_LENGHT);
-			memset(tmp, 0, WORD_LENGHT);
-			free(tmp);
+			big_cpy(tmp, x2);
+			big_free(tmp);
 		}
 	}
-	uint64_t *res;
-	if(equal_big(u, one)){
-		// frees
-		res = fast_p224_mod_big(x_1, p);
-		free(x_1);
-		free(x_2);
-		free(one);
-		free(u);
-		free(v);
-		return res;
-	}
-	else{
-		res = fast_p224_mod_big(x_2, p);
-		free(x_1);
-		free(x_2);
-		free(one);
-		free(u);
-		free(v);
-		return res;
-	}
+
+	if(big_eql(u, one))
+		big_fst_p224_mod(x1, r);
+	else
+		big_fst_p224_mod(x2, r);
+
+	big_free(x1);
+	big_free(x2);
+	big_free(one);
+	big_free(u);
+	big_free(v);
 }
 
 int
 main(int argc, char const *argv[])
 {
-	uint64_t *p224 = bin_to_big("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001");
-	uint64_t *a = bin_to_big("1001100011010101111100011100101110100101010110001011111110001111001101");
-	uint64_t *sum = mod_inv_big(a, p224);
+	big_t *p224 = big_new();
+	bin_to_big("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", p224);
+	big_t *a = big_new();
+	bin_to_big("1001100011010101111100011100101110100101010110001011111110001111001101", a);
+	big_t *sum = big_new();
+	big_mod_inv(a, p224, sum);
 	big_to_hex(sum);
-	free(a);
-	free(p224);
-	free(sum);
+	big_free(a);
+	big_free(p224);
+	big_free(sum);
 	return 0;
 }
