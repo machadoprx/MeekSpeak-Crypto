@@ -30,8 +30,9 @@ big_to_bin(const big_t *a)
 	int k = DIGIT_SIZE - 1;
 	while(k >= 0 && a->value[k--] == 0);
 	for(int i = k + 1; i >= 0; --i){	
-		for(uint64_t mask = 0x80000000u; mask > 0; mask >>= 1)
+		for(uint64_t mask = 0x80000000u; mask > 0; mask >>= 1){
 			*p++ = (mask & a->value[i]) ? '1' : '0';
+		}
 	}
 	return bin;
 }
@@ -529,27 +530,4 @@ big_mod_inv(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), bi
 	big_free(one);
 	big_free(u);
 	big_free(v);
-}
-
-int
-main(int argc, char const *argv[])
-{
-	big_t *p224 = big_new();
-	bin_to_big("11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001", p224);
-	big_t *a = big_new();
-	big_t *c = big_new();
-	bin_to_big("101011001", c);
-	bin_to_big("1001100011010101111100011111111110001111001101010101111100011110011011111100011101011100101110111010110101111111000111100110111001101", a);
-	//big_to_hex(a);
-	big_t *sum = big_new();
-	//printf("%s\n", big_to_bin(a));
-	//big_pow(a, c, big_fst_p224_mod, sum);
-	big_fst_25519_mod(a, sum);
-	big_to_hex(sum);
-	//big_mul(p224, p224, sum);
-	big_free(a);
-	big_free(p224);
-	big_free(sum);
-	big_free(c);
-	return 0;
 }
