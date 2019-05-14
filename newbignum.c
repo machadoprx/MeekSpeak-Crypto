@@ -382,6 +382,143 @@ big_to_hex(const big_t *a)
 }
 
 void
+big_mod(const big_t *a, const big_t *p, big_t *r)
+{
+	if(a == NULL || r == NULL){
+		return;
+	}
+	big_null(r);
+	big_cpy(a, r);
+	if(r->sign == false){
+		while(big_gth_uns(r, p) > 0){
+			big_t *tmp = big_new();
+			big_sub(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+	else{
+		while(r->sign == true){
+			big_t *tmp = big_new();
+			big_sum(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+}
+
+void
+big_fst_25519_mod(const big_t *a, big_t *r)
+{
+	if(a == NULL || r == NULL){
+		return;
+	}
+	big_null(r);
+	big_t *p = big_new();
+	bin_to_big(P25519, p);
+	big_cpy(a, r);
+	if(r->sign == false){
+		while(big_gth_uns(r, p) > 0){
+			big_t *tmp = big_new();
+			big_sub(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+	else{
+		while(r->sign == true){
+			big_t *tmp = big_new();
+			big_sum(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+	big_free(p);
+}
+
+void
+big_fst_p384_mod(const big_t *a, big_t *r)
+{
+	if(a == NULL || r == NULL){
+		return;
+	}
+	big_null(r);
+
+	big_t *p = big_new(); bin_to_big(P384, p);
+	big_t *s_1;	s_1 = big_new();
+	big_t *s_2;	s_2 = big_new();
+	big_t *s_3;	s_3 = big_new();
+	big_t *s_4;	s_4 = big_new();
+	big_t *s_5;	s_5 = big_new();
+	big_t *s_6;	s_6 = big_new();
+	big_t *s_7;	s_7 = big_new();
+	big_t *s_8;	s_8 = big_new();
+	big_t *s_9;	s_9 = big_new();
+	big_t *s_10; s_10 = big_new();
+	
+	int i = 0;
+	for(i = 0; i < 12; ++i){
+		s_1->value[i] = a->value[i];
+		s_3->value[i] = a->value[i + 12];
+		s_4->value[i] = a->value[i + 9];
+		s_5->value[i] = a->value[i + 8];
+		s_8->value[i] = a->value[i + 11];
+	}
+	for(i = 4; i < 7; ++i){
+		s_2->value[i] = a->value[i + 17];
+		s_4->value[i - 4] = a->value[i + 17];
+		s_6->value[i + 1] = a->value[i + 17];
+		s_7->value[i - 1] = a->value[i + 17];
+		s_9->value[i - 2] = a->value[i + 17];
+	}
+	s_5->value[0] = 0;
+	s_5->value[1] = a->value[23];
+	s_5->value[2] = 0;
+	s_5->value[3] = a->value[20];
+	s_6->value[4] = a->value[20];
+	s_7->value[0] = a->value[20];
+	s_8->value[0] = a->value[23];
+	s_9->value[1] = a->value[20];
+	s_10->value[3] = a->value[23];
+	s_10->value[4] = a->value[23];
+	
+	big_t *t1 = big_new();
+	big_t *t2 = big_new();
+	big_sum(s_2, s_2, r);
+	big_sum(r, s_1, t1);
+	big_sum(t1, s_3, t2);
+	big_sum(t2, s_4, r);
+	big_sum(r, s_5, t1);
+	big_sum(t1, s_6, t2);
+	big_sum(t2, s_7, r);
+	big_sub(r, s_8, t1);
+	big_sub(t1, s_9, t2);
+	big_sub(t2, s_10, r);
+
+	if(r->sign == false){
+		while(big_gth_uns(r, p) > 0){
+			big_t *tmp = big_new();
+			big_sub(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+	else{
+		while(r->sign == true){
+			big_t *tmp = big_new();
+			big_sum(r, p, tmp);
+			big_cpy(tmp, r);
+			big_free(tmp);
+		}
+	}
+
+	big_free(p); big_free(t2);
+	big_free(s_1); big_free(s_2);
+	big_free(s_3); big_free(s_4);
+	big_free(s_5); big_free(t1);
+}
+
+void
 big_fst_p224_mod(const big_t *a, big_t *r)
 {
 	if(a == NULL || r == NULL){
