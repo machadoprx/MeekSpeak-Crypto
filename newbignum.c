@@ -332,6 +332,19 @@ big_eql(const big_t *a, const big_t *b)
 }
 
 void
+big_and(const big_t *a, const big_t *b, big_t *r)
+{
+	if(a == NULL || b == NULL || r == NULL){
+		return;
+	}
+
+	big_null(r);
+	for(int i = 0; i < DIGIT_SIZE; i++){
+		r->value[i] = a->value[i] & b->value[i];
+	}
+}
+
+void
 big_rst(const big_t *a, big_t *r)
 {
 	if(a == NULL || r == NULL){
@@ -414,26 +427,52 @@ big_fst_25519_mod(const big_t *a, big_t *r)
 		return;
 	}
 	big_null(r);
+
 	big_t *p = big_new();
 	bin_to_big(P25519, p);
-	big_cpy(a, r);
-	if(r->sign == false){
-		while(big_gth_uns(r, p) > 0){
-			big_t *tmp = big_new();
-			big_sub(r, p, tmp);
-			big_cpy(tmp, r);
-			big_free(tmp);
-		}
+	big_t *u = big_new();
+	bin_to_big(U_25519, u);
+	big_t *bk_minus = big_new();
+	bin_to_big(BK_MINUS_25519, bk_minus);
+	big_t *bk_plus = big_new();
+	bin_to_big(BK_PLUS_25519, bk_plus);
+	big_t *bk_plus_minus = big_new();
+	bin_to_big(BK_PLUS_25519_MINUS, bk_plus_minus);
+	big_t *t1 = big_new();
+	big_t *t2 = big_new();
+	big_t *t3 = big_new();
+
+	big_cpy(a, t2);
+	for(int i = 0; i < 224; i++){
+		big_rst(t2, t1);
+		big_cpy(t1, t2);
 	}
-	else{
-		while(r->sign == true){
-			big_t *tmp = big_new();
-			big_sum(r, p, tmp);
-			big_cpy(tmp, r);
-			big_free(tmp);
-		}
+	big_mul(u, t1, t2);
+	big_cpy(t2, t1);
+	for(int i = 0; i < 288; i++){
+		big_rst(t1, t2);
+		big_cpy(t2, t1);
+	} // t2 == q3
+
+	big_and(a, bk_plus_minus, t1); //r1
+	big_mul(p, t2, t3); 
+	big_and(t3, bk_plus_minus, t2); //r2
+	big_sub(t1, t2, r);
+
+	bin_to_big("0", t3);
+	if(r->sign == true || big_eql(t3, r)){
+		big_sum(r, bk_plus, t1);
+		big_cpy(t1, r);
 	}
-	big_free(p);
+	while(big_gth_uns(r, p) >= EQUAL){
+		big_sub(r, p, t1);
+		big_cpy(t1, r);
+	}
+	
+	big_free(p); big_free(u);
+	big_free(bk_minus); big_free(bk_plus);
+	big_free(bk_plus_minus); big_free(t1);
+	big_free(t2); big_free(t3);
 }
 
 void
@@ -516,6 +555,9 @@ big_fst_p384_mod(const big_t *a, big_t *r)
 	big_free(s_1); big_free(s_2);
 	big_free(s_3); big_free(s_4);
 	big_free(s_5); big_free(t1);
+	big_free(s_6); big_free(s_7);
+	big_free(s_8); big_free(s_9);
+	big_free(s_10);
 }
 
 void
