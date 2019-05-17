@@ -1,5 +1,4 @@
 #include "newbignum.h"
-#include <time.h>
 
 big_t*
 big_new()
@@ -21,7 +20,7 @@ big_free(big_t *a)
 	free(a);
 }
 
-static char*
+char*
 big_to_bin(const big_t *a)
 {
 	char *bin = malloc(DIGIT_SIZE * DIGIT_SIZE);
@@ -494,9 +493,9 @@ big_fst_25519_mod(const big_t *a, big_t *r)
 	big_rst_word(t1, 9, t2);
 	big_cpy(t2, t1);
 
-	big_and(a, bk_plus_minus, t1); //r1
+	big_and(a, bk_plus_minus, t1);
 	big_mul(p, t2, t3); 
-	big_and(t3, bk_plus_minus, t2); //r2
+	big_and(t3, bk_plus_minus, t2);
 	big_sub(t1, t2, r);
 
 	bin_to_big("0", t3);
@@ -508,7 +507,6 @@ big_fst_25519_mod(const big_t *a, big_t *r)
 		big_sub(r, p, t1);
 		big_cpy(t1, r);
 	}
-	
 	big_free(p); big_free(u);
 	big_free(bk_minus); big_free(bk_plus);
 	big_free(bk_plus_minus); big_free(t1);
@@ -544,11 +542,12 @@ big_fst_p384_mod(const big_t *a, big_t *r)
 		s_8->value[i] = a->value[i + 11];
 	}
 	for(i = 4; i < 7; ++i){
-		s_2->value[i] = a->value[i + 17];
-		s_4->value[i - 4] = a->value[i + 17];
-		s_6->value[i + 1] = a->value[i + 17];
-		s_7->value[i - 1] = a->value[i + 17];
-		s_9->value[i - 2] = a->value[i + 17];
+		int temp = i + 17;
+		s_2->value[i] = a->value[temp];
+		s_4->value[i - 4] = a->value[temp];
+		s_6->value[i + 1] = a->value[temp];
+		s_7->value[i - 1] = a->value[temp];
+		s_9->value[i - 2] = a->value[temp];
 	}
 	s_5->value[0] = 0;
 	s_5->value[1] = a->value[23];
