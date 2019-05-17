@@ -23,8 +23,6 @@ static const char U_25519[] = "1000000000000000000000000000000000000000000000000
 
 typedef struct _big_t{
 	uint64_t *value;
-	char *bin;
-	int bits_lenght;
 	bool sign;
 }big_t;
 
@@ -42,7 +40,8 @@ void big_fst_p224_mod(const big_t *a, big_t *r);
 void big_fst_25519_mod(const big_t *a, big_t *r);
 void big_fst_p384_mod(const big_t *a, big_t *r);
 void big_mod(const big_t *a, const big_t *p, big_t *r);
-void big_rst(const big_t *a, uint32_t n, big_t *r);
+void big_rst(const big_t *a, big_t *r);
+void big_rst_word(const big_t *a, uint32_t n, big_t *r);
 void big_and(const big_t *a, const big_t *b, big_t *r);
 
 int big_gth(const big_t *a, const big_t *b);

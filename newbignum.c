@@ -7,7 +7,6 @@ big_new()
 	big_t *t = malloc(sizeof(struct _big_t));
 	t->value = malloc(WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
 	memset(t->value, 0, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
-	t->bits_lenght = 0;
 	t->sign = false;
 	return t;
 }
@@ -42,7 +41,6 @@ void
 big_null(big_t *a)
 {
 	memset(a->value, 0, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
-	a->bits_lenght = 0;
 	a->sign = false;
 }
 
@@ -346,7 +344,7 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 }
 
 void
-big_rst(const big_t *a, uint32_t n, big_t *r)
+big_rst_word(const big_t *a, uint32_t n, big_t *r)
 {
 	if(a == NULL || r == NULL || n == 0){
 		return;
@@ -355,30 +353,35 @@ big_rst(const big_t *a, uint32_t n, big_t *r)
 	big_t *z = big_new();
 	bin_to_big("0", z);
 	if(big_eql(z, a)){
+		big_free(z);
 		big_cpy(a, r);
 		return;
 	}
 	big_free(z);
 	
 	big_null(r);
-	uint32_t n1 = n / DIGIT_SIZE;
-	uint32_t n2 = n % DIGIT_SIZE;
-	uint32_t m = DIGIT_SIZE - 1;
-	while(a->value[m] == 0){
-		m--;
-	}
-	m++;
-	if(n1 > 0){
-		for(int i = 0; i < m - n1; i++){
-			r->value[i] = a->value[i + n1];
-		}
+	for(int i = 0; i < DIGIT_SIZE; i++){
+		r->value[i] = a->value[i + n];
 	}
 
-	if(n2 > 0){
-		for(int i = 0; i < m - 1 - n1; ++i){
-			r->value[i] = (a->value[i] >> n2) | (a->value[i + 1] << (32 - n2));
+	r->sign = a->sign;
+}
+
+void
+big_rst(const big_t *a, big_t *r)
+{
+	if(a == NULL || r == NULL){
+		return;
+	}
+
+	big_null(r);
+	int lsb = 0;
+	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
+		r->value[i] = a->value[i] >> 1;
+		if(lsb == 1){
+			r->value[i] = (a->value[i] | 0x100000000) >> 1;
 		}
-		r->value[m - 1 - n1] >>= n2;
+		lsb = a->value[i] & 1;
 	}
 	r->sign = a->sign;
 }
@@ -391,7 +394,6 @@ big_cpy(const big_t *a, big_t *r)
 	}
 
 	memcpy(r->value, a->value, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
-	r->bits_lenght = a->bits_lenght;
 	r->sign = a->sign; 
 }
 
@@ -463,11 +465,11 @@ big_fst_25519_mod(const big_t *a, big_t *r)
 	big_t *t3 = big_new();
 
 	big_cpy(a, t2);
-	big_rst(t2, 224, t1);
+	big_rst_word(t2, 7, t1);
 	big_cpy(t1, t2);
 	big_mul(u, t1, t2);
 	big_cpy(t2, t1);
-	big_rst(t1, 288, t2);
+	big_rst_word(t1, 9, t2);
 	big_cpy(t2, t1);
 
 	big_and(a, bk_plus_minus, t1); //r1
@@ -673,25 +675,25 @@ big_mod_inv(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), bi
 	while(!big_eql(u, one) && !big_eql(v, one)){
 		while(!big_odd(u)){
 			big_t *tmp = big_new();
-			big_rst(u, 1, tmp);
+			big_rst(u, tmp);
 			big_cpy(tmp, u);
 			if(big_odd(x1)){
 				big_sum(x1, b, tmp);
 				big_cpy(tmp, x1);
 			}
-			big_rst(x1, 1, tmp);
+			big_rst(x1, tmp);
 			big_cpy(tmp, x1);
 			big_free(tmp);
 		}
 		while(!big_odd(v)){
 			big_t *tmp = big_new(); 
-			big_rst(v, 1, tmp);
+			big_rst(v, tmp);
 			big_cpy(tmp, v);
 			if(big_odd(x2)){
 				big_sum(x2, b, tmp);
 				big_cpy(tmp, x2);
 			}
-			big_rst(x2, 1, tmp);
+			big_rst(x2, tmp);
 			big_cpy(tmp, x2);
 			big_free(tmp);
 		}
