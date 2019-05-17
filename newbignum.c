@@ -140,8 +140,30 @@ bin_to_big(const char *src, big_t *r)
 	free(num);
 }
 
+int
+big_legendre_symbol(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*))
+{
+	if(a == NULL || b == NULL){
+		return -2;
+	}
+
+	big_t *t = big_new();
+	big_t *r = big_new();
+	big_cpy(b, t);
+	t->value[0] -= 1;
+	big_rst(t, r);
+	big_pow(a, r, mod, t);
+	big_free(r);
+	uint64_t x = t->value[0];
+	big_free(t);
+	if(x > 1){
+		return -1;
+	}
+	return (int) x;
+}
+
 void
-big_pow(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), big_t *r)
+big_pow(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), big_t *r)
 {
 	bin_to_big("1", r);
 	if(big_gth_uns(b, r) <= 1){
@@ -160,12 +182,12 @@ big_pow(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), big_t 
 	for(int i = strlen(bin_b) - 2; i >= k; --i){
 		big_t *tmp = big_new();
 		big_mul(A, A, tmp);
-		(*rdc)(tmp, A);
+		(*mod)(tmp, A);
 		if(bin_b[i] == '1'){
 			big_t *tmp2 = big_new();
 			big_cpy(r, tmp);
 			big_mul(tmp, A, tmp2);
-			(*rdc)(tmp2, r);
+			(*mod)(tmp2, r);
 			big_free(tmp2);
 		}
 		big_free(tmp);
@@ -651,7 +673,7 @@ big_odd(const big_t *a)
 }
 
 void
-big_mod_inv(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), big_t *r)
+big_mod_inv(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), big_t *r)
 {
 	if(a == NULL || b == NULL || r == NULL){
 		return;
@@ -716,10 +738,10 @@ big_mod_inv(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), bi
 	}
 
 	if(big_eql(u, one)){
-		(*rdc)(x1, r);
+		(*mod)(x1, r);
 	}
 	else{
-		(*rdc)(x2, r);
+		(*mod)(x2, r);
 	}
 
 	big_free(x1);

@@ -34,8 +34,8 @@ void big_cpy(const big_t *a, big_t *r);
 void big_mul(const big_t *a, const big_t *b, big_t *r);
 void big_sub(const big_t *, const big_t *, big_t *);
 void big_sum(const big_t *, const big_t *, big_t *);
-void big_pow(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), big_t *r);
-void big_mod_inv(const big_t *a, const big_t *b, void(*rdc)(const big_t*, big_t*), big_t *r);
+void big_pow(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), big_t *r);
+void big_mod_inv(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), big_t *r);
 void big_fst_p224_mod(const big_t *a, big_t *r);
 void big_fst_25519_mod(const big_t *a, big_t *r);
 void big_fst_p384_mod(const big_t *a, big_t *r);
@@ -46,6 +46,7 @@ void big_and(const big_t *a, const big_t *b, big_t *r);
 
 int big_gth(const big_t *a, const big_t *b);
 int big_gth_uns(const big_t *a, const big_t *b);
+int big_legendre_symbol(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*));
 void bin_to_big(const char *src, big_t *r);
 bool big_eql(const big_t *a, const big_t *b);
 void big_to_hex(const big_t *a);
