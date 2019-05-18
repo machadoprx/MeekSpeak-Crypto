@@ -43,7 +43,7 @@ big_null(big_t *a)
 	a->sign = false;
 }
 
-static uint64_t
+static inline uint64_t
 bin_to_int(const char *num)
 {
 	uint64_t r = 0;
@@ -107,7 +107,7 @@ big_gth_uns(const big_t *a, const big_t *b)
 	return 1;
 }
 
-static char*
+static inline char*
 padd_str(const char *str)
 {
 	char *mask = malloc(sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
@@ -119,7 +119,7 @@ padd_str(const char *str)
 	return mask;
 }
 
-void
+inline void
 bin_to_big(const char *src, big_t *r)
 {
 	if(src == NULL || r == NULL){
@@ -129,12 +129,27 @@ bin_to_big(const char *src, big_t *r)
 	char *num = padd_str(src);
 	big_null(r);
 	for(int i = 0; i < DIGIT_SIZE; ++i){
-		char *digit = malloc(sizeof(char) * DIGIT_SIZE);
-		for(int j = DIGIT_SIZE * i, m = 0; j < DIGIT_SIZE * (i + 1); ++j){
-			digit[m++] = num[j];
+		char digit[DIGIT_SIZE];
+		for(int j = DIGIT_SIZE * i, m = 0; j < DIGIT_SIZE * (i + 1); j += 16){
+			digit[m] = num[j];
+			digit[m + 1] = num[j + 1];
+			digit[m + 2] = num[j + 2];
+			digit[m + 3] = num[j + 3];
+			digit[m + 4] = num[j + 4];
+			digit[m + 5] = num[j + 5];
+			digit[m + 6] = num[j + 6];
+			digit[m + 7] = num[j + 7];
+			digit[m + 8] = num[j + 8];
+			digit[m + 9] = num[j + 9];
+			digit[m + 10] = num[j + 10];
+			digit[m + 11] = num[j + 11];
+			digit[m + 12] = num[j + 12];
+			digit[m + 13] = num[j + 13];
+			digit[m + 14] = num[j + 14];
+			digit[m + 15] = num[j + 15];
+			m += 16;
 		}
 		r->value[(DIGIT_SIZE - 1) - i] = bin_to_int(digit);
-		free(digit);
 	}
 	free(num);
 }
@@ -254,12 +269,12 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 	big_null(r);
 	int e = 0;
 	uint64_t w = a->value[0] + b->value[0];
-	r->value[0] = w % BASE;
-	e = (int)(w / BASE);
+	r->value[0] = w & BASEM;
+	e = (int)(w >> 32);
 	for(int i = 1; i < DIGIT_SIZE; ++i){
 		w = e + a->value[i] + b->value[i];
-		r->value[i] = w % BASE;
-		e = (int)(w / BASE);
+		r->value[i] = w & BASEM;
+		e = (int)(w >> 32);
 	}
 	if(a->sign == true){
 		r->sign = true;
@@ -317,8 +332,8 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		w = w + BASE;
 		e = 1;
 	}
-	r->value[0] = w % BASE;
-	for(int i = 1; i < DIGIT_SIZE * 32 * 32; ++i){
+	r->value[0] = w & BASEM;
+	for(int i = 1; i < DIGIT_SIZE; ++i){ //BEFORE DIGIT_SIZE * DIGIT_SIZE
 		w = a->value[i] - b->value[i] - e;
 		if(gth == true){
 			w = a->value[i] - b->value[i] - e;
@@ -333,7 +348,7 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		else{
 			e = 0;
 		}
-		r->value[i] = w % BASE;
+		r->value[i] = w & BASEM;
 	}
 	if(gth == true){
 		r->sign = false;
@@ -357,8 +372,8 @@ big_mul(const big_t *a, const big_t *b, big_t *r)
 		hi = 0;
 		for(int j = 0; j < DIGIT_SIZE; ++j){
 			temp = r->value[i + j] + (a->value[i] * b->value[j]) + hi;
-			hi = (temp >> 32) & 0xFFFFFFFF;
-			lo = temp & 0xFFFFFFFF;
+			hi = (temp >> 32) & BASEM;
+			lo = temp & BASEM;
 			r->value[i + j] = lo;
 		} 
 		r->value[i + DIGIT_SIZE - 1] = hi;
