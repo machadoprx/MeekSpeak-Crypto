@@ -1,16 +1,5 @@
 from math import log, floor
 
-'''p = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed
-b = 0x100000000
-k = floor(log(p, b)) + 1
-u = floor((pow(b, 2 * k) / p))
-bk_minus = pow(b, k - 1)
-
-bk_plus = pow(b, k + 1)
-print(bin(bk_plus - 1))
-q2 = u / bk_plus
-print(len(bin(bk_minus)) - 3)
-print(len(bin(bk_plus)) - 3)'''
 def jacobi_calc(n, k):
 	t = 0
 	if n < 0: t = -1
@@ -29,18 +18,46 @@ def jacobi_calc(n, k):
 	if k == 1: return t
 	return 0
 
+def mod_inv(z, a):
+	i, j, y_1, y_2 = a, z, 1, 0
+	while j > 0:
+		rem = i % j
+		quo = i // j
+		y = y_2 - (y_1 * quo)
+		i, j, y_2, y_1 = j, rem, y_1, y
+	return y_2 % a
 
-p224 = 0b11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001
-p384 = 0b111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111011111111111111111111111111111111000000000000000000000000000000000000000000000000000000000000000011111111111111111111111111111111
+def mont(x, m, R, beta):
+	s1 = x & (R - 1)
+	s2 = (beta * s1) & (R - 1)
+	s3 = m * s2
+	t = (x + s3) >> 256
+	if t >= m:
+		t = t - m
+	return t
+
+def mont_mul(x, y, R, p, beta):
+	return mont(x * y, p, R, beta)
+
+def mont_exp(x, e, p, beta, R):
+	# R = pow(2, 32 * k)
+	# shift left of k words
+	x1 = (x * R) % p
+	# A is precomputed
+	A = R % p
+	bin_str = bin(e)[2:]
+	for i in range(len(bin_str)):
+		A = mont_mul(A, A, R, p, beta)
+		if bin_str[i] is '1':
+			A = mont_mul(A, x1, R, p, beta)
+	return mont_mul(A, 1, R, p, beta)
+
 p25519 = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed
-a = 0b1101011101111101110010001111111010
-'''print(len(bin(a ** 2)))
-print((a ** 2) > (p25519 ** 2))
-c = 0b10101100110111101011011
-print(hex(pow(a, c, p25519)))
 b = 0x100000000
+a = 0b11010111111110110111110111100110011111100110001111111110101110111110110110111110111001000111010111011111011011011111011100100011111100100011111111001000111111101101011101110010001111110101110111110110110111110111001000111111001000111111110000100011111110
+c = 0b10101100110111101011011
 k = floor(log(p25519, b)) + 1
-print(len(bin(pow(b, 2 * k))))'''
-print(hex(pow(a, (p25519 - 1) // 2, p25519)))
-print(jacobi_calc(a, p25519))
-
+R = pow(2, 32 * k)
+beta = mod_inv(p25519, R)
+beta *= -1
+print(hex((mont_exp(a, c, p25519, beta, R))))
