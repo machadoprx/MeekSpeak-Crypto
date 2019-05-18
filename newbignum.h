@@ -50,7 +50,7 @@ void 	big_and				(const big_t *, const big_t *, big_t *);
 // Utility functions (Compare, primes...)
 int 	big_gth				(const big_t *, const big_t *);
 int 	big_gth_uns			(const big_t *, const big_t *);
-int 	big_legendre_symbol	(const big_t *, const big_t *, void(*)(const big_t*, big_t*));
+int 	big_legendre_symbol	(const big_t *a, const big_t *b);
 void 	bin_to_big			(const char *, big_t *);
 bool 	big_eql				(const big_t *, const big_t *);
 void 	big_to_hex			(const big_t *);

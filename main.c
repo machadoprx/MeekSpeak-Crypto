@@ -13,13 +13,13 @@ main(int argc, char const *argv[])
 	big_t *sum1 = big_new();
 	//printf("%s\n", big_to_bin(a));
 	//big_fst_25519_mod(a, sum);
-	big_pow(a, c, big_fst_25519_mod, sum1);
-	//big_mont_pow_25516(a, c, sum1);
+	//big_pow(a, c, big_fst_25519_mod, sum1);
+	big_mont_pow_25516(a, c, sum1);
 	//big_mod_inv(a, base, big_fst_p224_mod, sum);
 	//big_to_hex(sum);
 	big_to_hex(sum1);
 	//big_fst_25519_mod(a, sum);
-	//int x = big_legendre_symbol(a, c, big_fst_25519_mod);
+	//int x = big_legendre_symbol(a, P25519);
 	//printf("%d\n", x);
 	big_free(sum1);
 	big_free(a);

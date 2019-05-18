@@ -140,7 +140,7 @@ bin_to_big(const char *src, big_t *r)
 }
 
 int
-big_legendre_symbol(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*))
+big_legendre_symbol(const big_t *a, const big_t *b)
 {
 	if(a == NULL || b == NULL){
 		return -2;
@@ -153,7 +153,7 @@ big_legendre_symbol(const big_t *a, const big_t *b, void(*mod)(const big_t*, big
 	big_cpy(b, t);
 	t->value[0] -= 1;
 	big_rst(t, r);
-	big_pow(a, r, mod, t);
+	big_mont_pow_25516(a, r, t);
 	big_free(r);
 	x = t->value[0];
 	big_free(t);
