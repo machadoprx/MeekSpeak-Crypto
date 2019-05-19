@@ -576,21 +576,17 @@ big_fst_25519_mod(const big_t *a, big_t *r)
 	big_t *t2 = big_new();
 	big_t *t3 = big_new();
 
-	big_cpy(a, t2);
-	big_rst_word(t2, 7, t1);
-	big_cpy(t1, t2);
+	big_rst_word(a, 7, t1);
 	big_mul(u, t1, t2);
-	big_cpy(t2, t1);
-	big_rst_word(t1, 9, t2);
-	big_cpy(t2, t1);
+	big_rst_word(t2, 9, t1);
 
-	big_and(a, bk_plus_minus, t1);
-	big_mul(p, t2, t3); 
-	big_and(t3, bk_plus_minus, t2);
-	big_sub(t1, t2, r);
+	big_and(a, bk_plus_minus, t2);
+	big_mul(p, t1, t3); 
+	big_and(t3, bk_plus_minus, t1);
+	big_sub(t2, t1, r);
 
 	bin_to_big("0", t3);
-	if(r->sign == true){
+	if(r->sign == true || big_eql(t3, r)){
 		big_sum(r, bk_plus, t1);
 		big_cpy(t1, r);
 	}
@@ -614,7 +610,7 @@ big_odd(const big_t *a)
 }
 
 void
-big_mod_inv(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), big_t *r)
+big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 {
 	if(a == NULL || b == NULL || r == NULL){
 		return;
@@ -678,10 +674,10 @@ big_mod_inv(const big_t *a, const big_t *b, void(*mod)(const big_t*, big_t*), bi
 		}
 	}
 	if(big_eql(u, one)){
-		(*mod)(x1, r);
+		big_mod(x1, b, r);
 	}
 	else{
-		(*mod)(x2, r);
+		big_mod(x2, b, r);
 	}
 	big_free(x1);
 	big_free(x2);

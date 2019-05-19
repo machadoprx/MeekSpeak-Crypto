@@ -41,7 +41,7 @@ void 	big_mul				(const big_t *, const big_t *, big_t *);
 void 	big_sub				(const big_t *, const big_t *, big_t *);
 void 	big_sum				(const big_t *, const big_t *, big_t *);
 void	big_mont_pow_25516	(const big_t *, const big_t *, big_t *);
-void 	big_mod_inv			(const big_t *, const big_t *, void(*)(const big_t*, big_t*), big_t *);
+void 	big_mod_inv			(const big_t *, const big_t *, big_t *);
 void 	big_fst_25519_mod	(const big_t *, big_t *);
 void 	big_mod				(const big_t *, const big_t *, big_t *);
 void 	big_rst				(const big_t *, big_t *);
