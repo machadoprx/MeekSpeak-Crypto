@@ -18,7 +18,7 @@ main(int argc, char const *argv[])
 	bin_to_big("1001011100111100101", c);
 	bin_to_big("111010110011101001111001001011110111011100001100000010100100011001100010100010101111100010111011111000010010000010011011101010001000110000011000000110001010000011000010001010100100111110110010010000000101110100101001001010100001110000000110010010101010001001100101010011110011001111011111", d);
 	bin_to_big(P25519, p);
-	
+
 	printf("Mult\n");
 	start = clock();
     big_mul(a, b, r);
@@ -27,6 +27,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Sub\n");
 	start = clock();
@@ -36,6 +37,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Sum\n");
 	start = clock();
@@ -45,6 +47,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Power Mod\n");
 	start = clock();
@@ -54,6 +57,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Mod Inverse\n");
 	start = clock();
@@ -63,6 +67,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Mod\n");
 	start = clock();
@@ -72,6 +77,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("One Rshift\n");
 	start = clock();
@@ -81,6 +87,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("32 shift\n");
 	start = clock();
@@ -90,6 +97,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("And Gate\n");
 	start = clock();
@@ -99,6 +107,7 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	big_free(a);
 	big_free(b);

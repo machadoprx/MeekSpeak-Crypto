@@ -4,8 +4,8 @@ big_t*
 big_new()
 {
 	big_t *t = malloc(sizeof(struct _big_t));
-	t->value = malloc(WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
-	memset(t->value, 0, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
+	t->value = malloc(WORDSSIZE);
+	memset(t->value, 0, WORDSSIZE);
 	t->sign = false;
 	return t;
 }
@@ -23,10 +23,10 @@ big_free(big_t *a)
 char*
 big_to_bin(const big_t *a)
 {
-	char *bin = malloc(DIGIT_SIZE * DIGIT_SIZE);
+	char *bin = malloc(512);
 	char *p = bin;
-	int k = DIGIT_SIZE - 1;
-	memset(bin, 0, DIGIT_SIZE * DIGIT_SIZE);
+	int k = MAXDIGITS - 1;
+	memset(bin, 0, 512);
 	while(k >= 0 && a->value[k--] == 0);
 	for(int i = k + 1; i >= 0; --i){	
 		for(uint64_t mask = 0x80000000u; mask > 0; mask >>= 1){
@@ -39,7 +39,7 @@ big_to_bin(const big_t *a)
 void
 big_null(big_t *a)
 {
-	memset(a->value, 0, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
+	memset(a->value, 0, WORDSSIZE);
 	a->sign = false;
 }
 
@@ -47,7 +47,7 @@ static inline uint64_t
 bin_to_int(const char *num)
 {
 	uint64_t r = 0;
-	for(int i = 0; i < DIGIT_SIZE; ++i){
+	for(int i = 0; i < 32; ++i){
 		r = r << 1;
 		if(num[i] == '1'){
 			r = r | 1;
@@ -63,7 +63,7 @@ big_gth(const big_t *a, const big_t *b)
 		return 0;
 	}
 	if(a->sign == false && b->sign == false){
-		for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+		for(int i = MAXDIGITS - 1; i >= 0; i--){
 			if(a->value[i] < b->value[i]){
 				return 0;
 			}
@@ -74,7 +74,7 @@ big_gth(const big_t *a, const big_t *b)
 		return 1;
 	}
 	else if(a->sign == true && b->sign == true){
-		for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+		for(int i = MAXDIGITS - 1; i >= 0; i--){
 			if(a->value[i] > b->value[i]){
 				return 0;
 			}
@@ -96,7 +96,7 @@ big_gth_uns(const big_t *a, const big_t *b)
 	if(a->value == NULL || b->value == NULL){
 		return 0;
 	}
-	for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+	for(int i = MAXDIGITS - 1; i >= 0; i--){
 		if(a->value[i] < b->value[i]){
 			return 0;
 		}
@@ -110,10 +110,10 @@ big_gth_uns(const big_t *a, const big_t *b)
 static inline char*
 padd_str(const char *str)
 {
-	char *mask = malloc(sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
-	memset(mask, '0', sizeof(char) * DIGIT_SIZE * DIGIT_SIZE);
+	char *mask = malloc(sizeof(char) * 512);
+	memset(mask, '0', sizeof(char) * 512);
 	int j = strlen(str) - 1;
-	for(int i = (DIGIT_SIZE * DIGIT_SIZE) - 1; j >= 0; --i){
+	for(int i = 511; j >= 0; --i){
 		mask[i] = str[j--];
 	}
 	return mask;
@@ -128,9 +128,9 @@ bin_to_big(const char *src, big_t *r)
 
 	char *num = padd_str(src);
 	big_null(r);
-	for(int i = 0; i < DIGIT_SIZE; ++i){
-		char digit[DIGIT_SIZE];
-		for(int j = DIGIT_SIZE * i, m = 0; j < DIGIT_SIZE * (i + 1); j += 16){
+	for(int i = 0; i < MAXDIGITS; ++i){
+		char digit[32];
+		for(int j = 32 * i, m = 0; j < 32 * (i + 1); j += 16){
 			digit[m] = num[j];
 			digit[m + 1] = num[j + 1];
 			digit[m + 2] = num[j + 2];
@@ -149,7 +149,7 @@ bin_to_big(const char *src, big_t *r)
 			digit[m + 15] = num[j + 15];
 			m += 16;
 		}
-		r->value[(DIGIT_SIZE - 1) - i] = bin_to_int(digit);
+		r->value[(MAXDIGITS - 1) - i] = bin_to_int(digit);
 	}
 	free(num);
 }
@@ -271,7 +271,7 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 	uint64_t w = a->value[0] + b->value[0];
 	r->value[0] = w & BASEM;
 	e = (int)(w >> 32);
-	for(int i = 1; i < DIGIT_SIZE; ++i){
+	for(int i = 1; i < MAXDIGITS; ++i){
 		w = e + a->value[i] + b->value[i];
 		r->value[i] = w & BASEM;
 		e = (int)(w >> 32);
@@ -333,7 +333,7 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		e = 1;
 	}
 	r->value[0] = w & BASEM;
-	for(int i = 1; i < DIGIT_SIZE; ++i){ //BEFORE DIGIT_SIZE * DIGIT_SIZE
+	for(int i = 1; i < MAXDIGITS; ++i){ //BEFORE MAXDIGITS * MAXDIGITS
 		w = a->value[i] - b->value[i] - e;
 		if(gth == true){
 			w = a->value[i] - b->value[i] - e;
@@ -368,15 +368,15 @@ big_mul(const big_t *a, const big_t *b, big_t *r)
 	big_null(r);
 	uint64_t temp;
 	uint64_t hi = 0, lo = 0;
-	for(int i = 0; i < DIGIT_SIZE; ++i){
+	for(int i = 0; i < MAXDIGITS; ++i){
 		hi = 0;
-		for(int j = 0; j < DIGIT_SIZE; ++j){
+		for(int j = 0; j < MAXDIGITS; ++j){
 			temp = r->value[i + j] + (a->value[i] * b->value[j]) + hi;
 			hi = (temp >> 32) & BASEM;
 			lo = temp & BASEM;
 			r->value[i + j] = lo;
 		} 
-		r->value[i + DIGIT_SIZE - 1] = hi;
+		//r->value[i + MAXDIGITS - 1] = hi;
 	}
 	r->sign = (a->sign ^ b->sign);
 }
@@ -391,7 +391,7 @@ big_eql(const big_t *a, const big_t *b)
 		return false;
 	}
 
-	for(int i = DIGIT_SIZE - 1; i >= 0; i--){
+	for(int i = MAXDIGITS - 1; i >= 0; i--){
 		if (a->value[i] != b->value[i]){
 			return false;
 		}
@@ -408,19 +408,19 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 
 	big_null(r);
 	if(a->sign == false){
-		for(int i = 0; i < DIGIT_SIZE; i++){
+		for(int i = 0; i < MAXDIGITS; i++){
 			r->value[i] = a->value[i] & b->value[i];
 		}
 	}
 	else{
-		int k = DIGIT_SIZE - 1;
+		int k = MAXDIGITS - 1;
 		while (k >= 0 && (a->value[k] == 0 || b->value[k] == 0)){
 			k--;
 		}
 		for(int i = 0; i <= k; i++){
 			r->value[i] = (a->value[i] ^ b->value[i]);
 		}
-		if(r->value[0] < (BASE - 1)){
+		if(r->value[0] < BASEM){
 			r->value[0]++;
 		}
 		else{
@@ -450,7 +450,7 @@ big_lst_word(const big_t *a, uint32_t n, big_t *r)
 		return;
 	}
 	big_free(z);
-	for(int i = 0; i < DIGIT_SIZE; i++){
+	for(int i = 0; i < MAXDIGITS; i++){
 		r->value[i + n] = a->value[i];
 	}
 	r->sign = a->sign;
@@ -471,8 +471,8 @@ big_rst_word(const big_t *a, uint32_t n, big_t *r)
 		big_cpy(a, r);
 		return;
 	}
-	big_null(r);
-	for(int i = 0; i < DIGIT_SIZE; i++){
+
+	for(int i = 0; i < MAXDIGITS; i++){
 		r->value[i] = a->value[i + n];
 	}
 	big_free(z);
@@ -488,7 +488,7 @@ big_rst(const big_t *a, big_t *r)
 
 	big_null(r);
 	int lsb = 0;
-	for(int i = DIGIT_SIZE - 1; i >= 0; --i){
+	for(int i = MAXDIGITS - 1; i >= 0; --i){
 		r->value[i] = a->value[i] >> 1;
 		if(lsb == 1){
 			r->value[i] = (a->value[i] | 0x100000000) >> 1;
@@ -505,14 +505,14 @@ big_cpy(const big_t *a, big_t *r)
 		return;
 	}
 
-	memcpy(r->value, a->value, WORD_LENGHT * DIGIT_SIZE * DIGIT_SIZE);
+	memcpy(r->value, a->value, WORDSSIZE);
 	r->sign = a->sign; 
 }
 
 void
 big_to_hex(const big_t *a)
 {
-	int k = DIGIT_SIZE -1;
+	int k = MAXDIGITS - 1;
 	while(a->value[k] == 0 && k >= 0){
 		k--;
 	}

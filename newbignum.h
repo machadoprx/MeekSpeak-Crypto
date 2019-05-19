@@ -5,10 +5,10 @@
 #include <stdint.h>
 
 // Macros for organization
-#define DIGIT_SIZE 		32
+#define MAXDIGITS		16
+#define WORDSSIZE		32 * sizeof(uint64_t)
 #define BASE 			0x100000000u
 #define BASEM			0xFFFFFFFFu
-#define WORD_LENGHT 	32 * sizeof(uint64_t)
 #define LESS 			0
 #define EQUAL 			1
 #define GREATER 		2
