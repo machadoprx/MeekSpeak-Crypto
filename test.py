@@ -48,54 +48,63 @@ y = 0x10000000000000000000000000000000000000000000000000000000000000000
 
 print("MULT")
 start = time()
-print(hex(a * b))
+r = a * b
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("SUB")
 start = time()
-print(hex(b - a))
+r = b - a
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("SUM")
 start = time()
-print(hex(a + b))
+r = a + b
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("POWERMOD")
 start = time()
-print(hex(pow(a, c, p)))
+r = pow(a, c, p)
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("MODINV")
 start = time()
-print(hex(b_mod_inv(a, p)))
+r = b_mod_inv(a, p)
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("MOD")
 start = time()
-print(hex(d % p))
+r = d % p
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("ONE RSHIFT")
 start = time()
-print(hex(a >> 1))
+r = a >> 1
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("32 RSHIFT")
 start = time()
-print(hex(a >> 32))
+r = a >> 32
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
 
 print("AND")
 start = time()
-print(hex(a & b))
+r = a & b
 end = time()
+print(hex(r))
 print("%0f\n" % (end - start))
