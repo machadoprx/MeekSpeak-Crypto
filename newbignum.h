@@ -26,7 +26,7 @@ static const char A_25519[] 			= "100110";
 
 // Big Integer structure
 typedef struct _big_t{
-	uint64_t 	*value;
+	uint64_t 	value[32];
 	bool 		sign;
 }big_t;
 
@@ -40,9 +40,9 @@ void 	big_cpy				(const big_t *, big_t *);
 void 	big_mul				(const big_t *, const big_t *, big_t *);
 void 	big_sub				(const big_t *, const big_t *, big_t *);
 void 	big_sum				(const big_t *, const big_t *, big_t *);
-void	big_mont_pow_25516	(const big_t *, const big_t *, const big_t *, big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
+void	big_mont_pow		(const big_t *, const big_t *, const big_t *, big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
 void 	big_mod_inv			(const big_t *, const big_t *, big_t *);
-void	big_fst_25519_mod	(const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
+void	big_fst_mod			(const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
 void 	big_mod				(const big_t *, const big_t *, big_t *);
 void 	big_rst				(const big_t *, big_t *);
 void 	big_rst_word		(const big_t *, uint32_t, big_t *);

@@ -69,7 +69,7 @@ main(int argc, char const *argv[])
 
 	printf("Power Mod\n");
 	start = clock();
-	big_mont_pow_25516(a, c, p, A, R, beta, Rm, u, bk_minus, bk_plus, bk_plus_minus, r);
+	big_mont_pow(a, c, p, A, R, beta, Rm, u, bk_minus, bk_plus, bk_plus_minus, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -89,7 +89,7 @@ main(int argc, char const *argv[])
 
 	printf("Mod\n");
 	start = clock();
-	big_fst_25519_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
+	big_fst_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
