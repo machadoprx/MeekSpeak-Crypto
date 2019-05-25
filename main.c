@@ -89,7 +89,7 @@ main(int argc, char const *argv[])
 
 	printf("Mod\n");
 	start = clock();
-	big_fst_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
+	big_barrett_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -107,7 +107,7 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	printf("32 shift\n");
+	printf("32 rshift\n");
 	start = clock();
     big_rst_word(a, 1, r);
 	end = clock();
@@ -120,6 +120,26 @@ main(int argc, char const *argv[])
 	printf("And Gate\n");
 	start = clock();
     big_and(a, b, r);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	big_to_hex(r);
+	big_null(r);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
+
+	printf("L shift\n");
+	start = clock();
+    big_lst(a, r);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	big_to_hex(r);
+	big_null(r);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
+
+	printf("32 lshift\n");
+	start = clock();
+    big_lst_word(a, 1, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);

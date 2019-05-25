@@ -76,7 +76,7 @@ print("%0f\n" % (end - start))
 
 print("MODINV")
 start = time()
-r = b_mod_inv(a, p)
+r = mod_inv(a, p)
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))
@@ -105,6 +105,20 @@ print("%0f\n" % (end - start))
 print("AND")
 start = time()
 r = a & b
+end = time()
+print(hex(r))
+print("%0f\n" % (end - start))
+
+print("ONE LSHIFT")
+start = time()
+r = a << 1
+end = time()
+print(hex(r))
+print("%0f\n" % (end - start))
+
+print("32 LSHIFT")
+start = time()
+r = a << 32
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))

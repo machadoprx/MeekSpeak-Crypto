@@ -9,6 +9,7 @@
 #define WORDSSIZE		32 * sizeof(uint64_t)
 #define BASE 			0x100000000u
 #define BASEM			0xFFFFFFFFu
+#define BASEBITS		32
 #define LESS 			0
 #define EQUAL 			1
 #define GREATER 		2
@@ -42,10 +43,12 @@ void 	big_sub				(const big_t *, const big_t *, big_t *);
 void 	big_sum				(const big_t *, const big_t *, big_t *);
 void	big_mont_pow		(const big_t *, const big_t *, const big_t *, big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
 void 	big_mod_inv			(const big_t *, const big_t *, big_t *);
-void	big_fst_mod			(const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
+void	big_barrett_mod		(const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, const big_t *, big_t *);
 void 	big_mod				(const big_t *, const big_t *, big_t *);
+void	big_lst				(const big_t *, big_t *);
 void 	big_rst				(const big_t *, big_t *);
-void 	big_rst_word		(const big_t *, uint32_t, big_t *);
+void 	big_rst_word		(const big_t *, int, big_t *);
+void 	big_lst_word		(const big_t *, int, big_t *);
 void 	big_and				(const big_t *, const big_t *, big_t *);
 
 // Utility functions (Compare, primes...)
