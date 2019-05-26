@@ -231,18 +231,18 @@ big_mont_pow(const big_t *a, const big_t *b, const big_t *p, big_t *A, const big
 	big_t xn;
 	big_t t;
 	char *bin_b = big_to_bin(b);
-	int k = 1;
+	char *bit = bin_b;
 	big_mul(a, R, &t);
 	big_barrett_mod(&t, p, u, bk_minus, bk_plus, bk_plus_minus, &xn);
 
-	while (k < strlen(bin_b) && bin_b[k] == '0') {
-		k++;
+	while (*bit == '0') {
+		bit++;
 	}
 
-	for (int i = k; i < strlen(bin_b); ++i) {
+	while (*bit) {
 		big_mul(A, A, &t);
 		big_mont(&t, p, Rm, beta, A);
-		if (bin_b[i] == '1') {
+		if (*bit++ == '1') {
 			big_mul(A, &xn, &t);
 			big_mont(&t, p, Rm, beta, A);
 		}
