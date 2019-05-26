@@ -79,7 +79,7 @@ main(int argc, char const *argv[])
 
 	printf("Mod Inverse\n");
 	start = clock();
-    big_mod_inv(a, p, r);
+    big_mod_inv(b, p, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -144,6 +144,16 @@ main(int argc, char const *argv[])
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
 	big_null(r);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
+
+	bin_to_big(A_25519, A);
+	printf("legendre\n");
+	start = clock();
+	int x = big_legendre_symbol(a, p, A, R, beta, Rm, u, bk_minus, bk_plus, bk_plus_minus);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	printf("%d\n", x);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 

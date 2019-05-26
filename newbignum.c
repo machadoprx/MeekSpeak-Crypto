@@ -1,6 +1,6 @@
 #include "newbignum.h"
 
-inline big_t*
+big_t*
 big_new()
 {
 	big_t *t = malloc(sizeof(struct _big_t));
@@ -18,7 +18,7 @@ big_free(big_t *a)
 	free(a);
 }
 
-static inline int
+static int
 big_get_lnt(const big_t *a)
 {
 	int k = MAXDIGITS - 1;
@@ -51,7 +51,7 @@ big_to_bin(const big_t *a)
 	return bin;
 }
 
-inline void
+void
 big_null(big_t *a)
 {
 	if (a == NULL) {
@@ -62,7 +62,7 @@ big_null(big_t *a)
 	a->sign = false;
 }
 
-inline void
+void
 big_cpy(const big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
@@ -73,7 +73,7 @@ big_cpy(const big_t *a, big_t *r)
 	r->sign = a->sign; 
 }
 
-static inline uint64_t
+static uint64_t
 bin_to_int(const char *num)
 {
 	uint64_t r = 0;
@@ -99,7 +99,6 @@ big_gth(const big_t *a, const big_t *b)
 	else if (a->sign == b->sign) {
 
 		if (a->sign == false) {
-
 			for (int i = MAXDIGITS - 1; i >= 0; i--) {
 				if (a->value[i] < b->value[i]) {
 					return 0;
@@ -110,8 +109,8 @@ big_gth(const big_t *a, const big_t *b)
 			}
 
 		}
-		else{
 
+		else{
 			for (int i = MAXDIGITS - 1; i >= 0; i--) {
 				if (a->value[i] > b->value[i]) {
 					return 0;
@@ -127,7 +126,7 @@ big_gth(const big_t *a, const big_t *b)
 	return 0;
 }
 
-inline int 
+int 
 big_gth_uns(const big_t *a, const big_t *b)
 {
 	if (a->value == NULL || b->value == NULL) {
@@ -146,7 +145,7 @@ big_gth_uns(const big_t *a, const big_t *b)
 	return 1;
 }
 
-static inline char*
+char*
 padd_str(const char *str)
 {
 	char *mask = malloc(sizeof(char) * 512);
@@ -160,7 +159,7 @@ padd_str(const char *str)
 	return mask;
 }
 
-inline void
+void
 bin_to_big(const char *src, big_t *r)
 {
 	if (src == NULL || r == NULL) {
@@ -191,21 +190,12 @@ big_legendre_symbol(const big_t *a, const big_t *b, big_t *A, const big_t *R, co
 
 	big_t t;
 	big_t r;
-	uint64_t x;
-	big_cpy(b, &t);
-	t.value[0] -= 1;
-	big_rst(&t, &r);
-	big_mont_pow(a, &r, b, A, R, beta, Rm, u, bk_minus, bk_plus, bk_plus_minus, &t);
-	x = t.value[0];
-
-	if (x > 1) {
-		return -1;
-	}
-
-	return (int)x;
+	big_rst(b, &t);
+	big_mont_pow(a, &t, b, A, R, beta, Rm, u, bk_minus, bk_plus, bk_plus_minus, &r);
+	return (r.value[0] > 1) ? -1 : r.value[0];
 }
 
-static inline void
+void
 big_mont(const big_t *a, const big_t *b, const big_t *Rm, const big_t *beta, big_t *r)
 {
 	big_t t1;
@@ -279,20 +269,18 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	int e = 0;
+	int carry;
 	uint64_t w = a->value[0] + b->value[0];
 	r->value[0] = w & BASEM;
-	e = (int)(w >> BASEBITS);
+	carry = w >> 32;
 
 	for (int i = 1; i < MAXDIGITS; ++i) {
-		w = e + a->value[i] + b->value[i];
+		w = carry + a->value[i] + b->value[i];
 		r->value[i] = w & BASEM;
-		e = (int)(w >> BASEBITS);
+		carry = w >> 32;
 	}
 
-	if (a->sign == true) {
-		r->sign = true;
-	}
+	r->sign = a->sign ? true : false;
 }
 
 void
@@ -307,14 +295,9 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		big_t b1;
 		big_cpy(a, &a1);
 		big_cpy(b, &b1);
-		a1.sign = false;
-		b1.sign = false;
+		a1.sign = b1.sign = false;
 		big_sum(&a1, &b1, r);
-
-		if (a->sign == true) {
-			r->sign = true;
-		}
-
+		r->sign = a->sign ? true : false;
 		return;
 	}
 
@@ -323,58 +306,64 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		big_t b1;
 		big_cpy(a, &a1);
 		big_cpy(b, &b1);
-		a1.sign = false;
-		b1.sign = false;
+		a1.sign = b1.sign = false;
 		big_sub(&b1, &a1, r);
 		return;
 	}
 
 	big_null(r);
-	bool gth = false;
-	if (big_gth_uns(a, b) > 0) {
-		gth = true;
-	}
-
 	int e = 0;
 	int64_t w = 0;
-	if (gth == true) {
+	
+	if (big_gth_uns(a, b) > LESS) {
 		w = a->value[0] - b->value[0];
-	}
-	else {
-		w = b->value[0] - a->value[0];
-	}
-
-	if (w < 0) {
-		w = w + BASE;
-		e = 1;
-	}
-
-	r->value[0] = w & BASEM;
-	for (int i = 1; i < MAXDIGITS; ++i) {
-		w = a->value[i] - b->value[i] - e;
-
-		if (gth == true) {
-			w = a->value[i] - b->value[i] - e;
-		}
-		else {
-			w = b->value[i] - a->value[i] - e;
-		}
 
 		if (w < 0) {
 			w = w + BASE;
 			e = 1;
 		}
-		else {
-			e = 0;
+
+		r->value[0] = w & BASEM;
+		for (int i = 1; i < MAXDIGITS; ++i) {
+			w = a->value[i] - b->value[i] - e;
+
+			if (w < 0) {
+				w = w + BASE;
+				e = 1;
+			}
+			else {
+				e = 0;
+			}
+
+			r->value[i] = w & BASEM;
 		}
 
-		r->value[i] = w & BASEM;
-	}
-
-	if (gth == true) {
 		r->sign = false;
 	}
+
 	else {
+		w = b->value[0] - a->value[0];
+		
+		if (w < 0) {
+			w = w + BASE;
+			e = 1;
+		}
+
+		r->value[0] = w & BASEM;
+		for (int i = 1; i < MAXDIGITS; ++i) {
+
+			w = b->value[i] - a->value[i] - e;
+
+			if (w < 0) {
+				w = w + BASE;
+				e = 1;
+			}
+			else {
+				e = 0;
+			}
+
+			r->value[i] = w & BASEM;
+		}
 		r->sign = true;
 	}
 }
@@ -387,16 +376,16 @@ big_mul(const big_t *a, const big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	uint64_t temp;
-	uint64_t hi = 0, lo = 0;
+	uint64_t uv;
+	uint32_t u = 0, v = 0;
 
 	for (int i = 0; i < MAXDIGITS; ++i) {
-		hi = 0;
+		u = 0;
 		for (int j = 0; j < MAXDIGITS; ++j) {
-			temp = r->value[i + j] + (a->value[i] * b->value[j]) + hi;
-			hi = (temp >> BASEBITS) & BASEM;
-			lo = temp & BASEM;
-			r->value[i + j] = lo;
+			uv = r->value[i + j] + (a->value[i] * b->value[j]) + u;
+			u = (uv >> BASEBITS) & BASEM;
+			v = uv & BASEM;
+			r->value[i + j] = v;
 		} 
 	}
 
@@ -440,6 +429,7 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 			r->value[i] = a->value[i] & b->value[i];
 		}
 	}
+
 	else {
 		for (int i = 0; i <= g; i++) {
 			r->value[i] = (a->value[i] ^ b->value[i]);
@@ -448,6 +438,7 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 		if (r->value[0] < BASEM) {
 			r->value[0]++;
 		}
+		
 		else {
 			big_t t;
 			big_t one;
@@ -473,7 +464,7 @@ big_rst_word(const big_t *a, int n, big_t *r)
 	r->sign = a->sign;
 }
 
-inline void
+void
 big_rst(const big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
@@ -498,6 +489,7 @@ big_lst_word(const big_t *a, int n, big_t *r)
 		return;
 	}
 
+	big_null(r);
 	for (int i = 0; i < MAXDIGITS; i++) {
 		r->value[i + n] = a->value[i];
 	}
@@ -505,20 +497,17 @@ big_lst_word(const big_t *a, int n, big_t *r)
 	r->sign = a->sign;
 }
 
-inline void
+void
 big_lst(const big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
 		return;
 	}
 
-	big_null(r);
-	int msb = 0;
-
-	int n = big_get_lnt(a);
 	uint64_t t, carry = 0;
+	big_null(r);
 
-	for (int i = 0; i <= n + 1; ++i) {
+	for (int i = 0; i < MAXDIGITS; ++i) {
 		t = (a->value[i] << 1) + carry;
 		r->value[i] = t & BASEM;
 		carry = t >> BASEBITS;
@@ -538,12 +527,7 @@ big_to_hex(const big_t *a)
 	fputs("0x", stdout);
 
 	for (int i = n; i >= 0; --i) {
-		if (a->value[i] > 0xFFFFFFF) {
-			printf("%lx", a->value[i]);
-		}
-		else {
-			printf("%08lx", a->value[i]);
-		}
+		a->value[i] > 0xFFFFFFF ? printf("%lx", a->value[i]) : printf("%08lx", a->value[i]);
 	}
 
 	fputs("\n", stdout);
@@ -556,20 +540,21 @@ big_mod(const big_t *a, const big_t *p, big_t *r)
 		return;
 	}
 	
+	big_t t;
 	big_null(r);
 	big_cpy(a, r);
-	big_t tmp;
 
 	if (r->sign == false){
 		while (big_gth_uns(r, p) > 0) {
-			big_sub(r, p, &tmp);
-			big_cpy(&tmp, r);
+			big_sub(r, p, &t);
+			big_cpy(&t, r);
 		}
 	}
+
 	else {
 		while (r->sign == true) {
-			big_sum(r, p, &tmp);
-			big_cpy(&tmp, r);
+			big_sum(r, p, &t);
+			big_cpy(&t, r);
 		}
 	}
 }
@@ -581,10 +566,8 @@ big_barrett_mod(const big_t *a, const big_t *p, const big_t *u, const big_t *bk_
 		return;
 	}
 
+	big_t t1, t2, t3;
 	big_null(r);
-	big_t t1;
-	big_t t2;
-	big_t t3;
 	
 	big_rst_word(a, 7, &t1);
 	big_mul(u, &t1, &t2);
@@ -628,13 +611,9 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 		return;
 	}
 
+	big_t u, v, x1, x2, one, t; 
 	big_null(r);
-	big_t u; 
-	big_t v; 
-	big_t x1; 
-	big_t x2;
-	big_t one;
-
+	big_null(&t);
 	big_cpy(a, &u);
 	big_cpy(b, &v);
 	big_null(&x1);
@@ -643,49 +622,44 @@ big_mod_inv(const big_t *a, const big_t *b, big_t *r)
 	x1.value[0] = one.value[0] = 1;
 
 	while (!big_eql(&u, &one) && !big_eql(&v, &one)) {
-		big_t tmp;
 
 		while (!big_odd(&u)) {
-			big_rst(&u, &tmp);
-			big_cpy(&tmp, &u);
+			big_rst(&u, &t);
+			big_cpy(&t, &u);
 			if (big_odd(&x1)) {
-				big_sum(&x1, b, &tmp);
-				big_cpy(&tmp, &x1);
+				big_sum(&x1, b, &t);
+				big_cpy(&t, &x1);
 			}
-			big_rst(&x1, &tmp);
-			big_cpy(&tmp, &x1);
+			big_rst(&x1, &t);
+			big_cpy(&t, &x1);
 		}
 
 		while (!big_odd(&v)) {
-			big_rst(&v, &tmp);
-			big_cpy(&tmp, &v);
+			big_rst(&v, &t);
+			big_cpy(&t, &v);
 			if (big_odd(&x2)) {
-				big_sum(&x2, b, &tmp);
-				big_cpy(&tmp, &x2);
+				big_sum(&x2, b, &t);
+				big_cpy(&t, &x2);
 			}
-			big_rst(&x2, &tmp);
-			big_cpy(&tmp, &x2);
+			big_rst(&x2, &t);
+			big_cpy(&t, &x2);
 		}
 
 		if (big_gth(&u, &v) >= EQUAL) {
-			big_sub(&u, &v, &tmp);
-			big_cpy(&tmp, &u);
-			big_sub(&x1, &x2, &tmp);
-			big_cpy(&tmp, &x1);
+			big_sub(&u, &v, &t);
+			big_cpy(&t, &u);
+			big_sub(&x1, &x2, &t);
+			big_cpy(&t, &x1);
 		}
+
 		else {
-			big_sub(&v, &u, &tmp);
-			big_cpy(&tmp, &v);
-			big_sub(&x2, &x1, &tmp);
-			big_cpy(&tmp, &x2);
+			big_sub(&v, &u, &t);
+			big_cpy(&t, &v);
+			big_sub(&x2, &x1, &t);
+			big_cpy(&t, &x2);
 		}
 		
 	}
 
-	if (big_eql(&u, &one)) {
-		big_mod(&x1, b, r);
-	}
-	else {
-		big_mod(&x2, b, r);
-	}
+	big_eql(&u, &one) ? big_mod(&x1, b, r) : big_mod(&x2, b, r);
 }
