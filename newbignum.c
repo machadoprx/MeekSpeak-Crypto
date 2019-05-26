@@ -19,11 +19,12 @@ big_free(big_t *a)
 }
 
 static int
-big_get_lnt(const big_t *a)
+big_get_lnt(big_t *a)
 {
-	int k = MAXDIGITS - 1;
+	int k = MAX_DIGITS - 1;
+	uint_fast32_t *ap = a->value + k;
 
-	while (k >= 0 && a->value[k] == 0) {
+	while (*ap-- == 0) {
 		k--;
 	}
 
@@ -31,7 +32,7 @@ big_get_lnt(const big_t *a)
 }
 
 char*
-big_to_bin(const big_t *a)
+big_to_bin(big_t *a)
 {
 	if (a == NULL) {
 		return NULL;
@@ -39,12 +40,13 @@ big_to_bin(const big_t *a)
 
 	char *bin = malloc(512);
 	char *p = bin;
-	int k = big_get_lnt(a);
+	int k = big_get_lnt(a);	
+	uint_fast32_t *ap;
 	memset(bin, 0, 512);
 
-	for (int i = k; i >= 0; --i) {	
-		for (uint32_t mask = 0x80000000u; mask > 0; mask >>= 1) {
-			*p++ = (mask & a->value[i]) ? '1' : '0';
+	for (ap = a->value + k; ap >= &a->value[0]; ap--) {
+		for (uint_fast32_t mask = 0x80000000u; mask > 0; mask >>= 1) {
+			*p++ = (mask & (*ap)) ? '1' : '0';
 		}
 	}
 
@@ -58,35 +60,36 @@ big_null(big_t *a)
 		return;
 	}
 
-	memset(a->value, 0, WORDSSIZE);
+	memset(a->value, 0, WORDS_SIZE);
 	a->sign = false;
 }
 
 void
-big_cpy(const big_t *a, big_t *r)
+big_cpy(big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
 		return;
 	}
 
-	memcpy(r->value, a->value, WORDSSIZE);
+	memcpy(r->value, a->value, WORDS_SIZE);
 	r->sign = a->sign; 
 }
 
-static uint32_t
-bin_to_int(const char *num)
+static uint_fast32_t
+bin_to_int(char *num)
 {
-	uint32_t r = 0;
+	uint_fast32_t r = 0;
+	char *p = num;
 
-	for (int i = 0; i < BASEBITS; i++) {
-		r = (num[i] == '1') ? (r << 1) ^ 1 : r << 1;
+	while (p <= &num[31]) {
+		r = (*p++ == '1') ? (r << 1) ^ 1 : r << 1;
 	}
 
 	return r;
 }
 
 int 
-big_gth(const big_t *a, const big_t *b)
+big_gth(big_t *a, big_t *b)
 {
 	if (a->value == NULL || b->value == NULL) {
 		return 0;
@@ -99,7 +102,7 @@ big_gth(const big_t *a, const big_t *b)
 	else if (a->sign == b->sign) {
 
 		if (a->sign == false) {
-			for (int i = MAXDIGITS - 1; i >= 0; i--) {
+			for (int i = MAX_DIGITS - 1; i >= 0; i--) {
 
 				if (a->value[i] < b->value[i]) {
 					return 0;
@@ -114,7 +117,7 @@ big_gth(const big_t *a, const big_t *b)
 		}
 
 		else{
-			for (int i = MAXDIGITS - 1; i >= 0; i--) {
+			for (int i = MAX_DIGITS - 1; i >= 0; i--) {
 
 				if (a->value[i] > b->value[i]) {
 					return 0;
@@ -133,19 +136,22 @@ big_gth(const big_t *a, const big_t *b)
 }
 
 int 
-big_gth_uns(const big_t *a, const big_t *b)
+big_gth_uns(big_t *a, big_t *b)
 {
 	if (a->value == NULL || b->value == NULL) {
 		return 0;
 	}
 
-	for (int i = MAXDIGITS - 1; i >= 0; i--) {
+	uint_fast32_t *ap = &a->value[31];
+	uint_fast32_t *bp = &b->value[31];
 
-		if (a->value[i] < b->value[i]) {
+	for (;ap >= &a->value[0]; ap--, bp--) {
+
+		if (*ap < *bp) {
 			return 0;
 		}
 
-		else if (a->value[i] > b->value[i]) {
+		else if (*ap > *bp) {
 			return 2;
 		}
 	}
@@ -153,44 +159,49 @@ big_gth_uns(const big_t *a, const big_t *b)
 	return 1;
 }
 
-char*
-padd_str(const char *str)
+static char*
+padd_str(char *str)
 {
 	char *mask = malloc(sizeof(char) * 512);
+	char *p = str + (strlen(str) - 1);
+	char *m = mask + 511;
 	memset(mask, '0', sizeof(char) * 512);
-	int j = strlen(str) - 1;
 
-	for (int i = 511; j >= 0; --i) {
-		mask[i] = str[j--];
+	while (*p) {
+		*m-- = *p--;
 	}
 
 	return mask;
 }
 
 void
-bin_to_big(const char *src, big_t *r)
+bin_to_big(char *src, big_t *r)
 {
 	if (src == NULL || r == NULL) {
 		return;
 	}
 
-	big_null(r);
 	char *num = padd_str(src);
-	int j;
+	char *nump = num;
+	char digit[DIGIT_BITS];
+	uint_fast32_t *rp = r->value + (MAX_DIGITS - 1);
+	big_null(r);
 
-	for (int i = 0; i < MAXDIGITS; ++i) {
-		char digit[BASEBITS];
-		for (int j = BASEBITS * i, m = 0; j < BASEBITS * (i + 1); j++, m++) {
-			digit[m] = num[j];
+	for (int i = 0; i < MAX_DIGITS; ++i) {
+		char *digp = digit;
+
+		while (digp <= &digit[31]) {
+			*digp++ = *nump++;
 		}
-		r->value[(MAXDIGITS - 1) - i] = bin_to_int(digit);
+
+		*(rp--) = bin_to_int(digit);
 	}
 
 	free(num);
 }
 
 int
-big_legendre_symbol(const big_t *a, const big_t *b, big_t *A, const big_t *R, const big_t *beta, const big_t *Rm, const big_t *u, const big_t *bk_minus, const big_t *bk_plus, const big_t *bk_plus_minus)
+big_legendre_symbol(big_t *a, big_t *b, big_t *A, big_t *R, big_t *beta, big_t *Rm, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus)
 {
 	if (a == NULL || b == NULL || A == NULL || R == NULL || beta == NULL || Rm == NULL || u == NULL || bk_minus == NULL || bk_plus == NULL || bk_plus_minus == NULL) {
 		return -2;
@@ -204,7 +215,7 @@ big_legendre_symbol(const big_t *a, const big_t *b, big_t *A, const big_t *R, co
 }
 
 void
-big_mont(const big_t *a, const big_t *b, const big_t *Rm, const big_t *beta, big_t *r)
+big_mont(big_t *a, big_t *b, big_t *Rm, big_t *beta, big_t *r)
 {
 	big_t t1;
 	big_null(r);
@@ -222,7 +233,7 @@ big_mont(const big_t *a, const big_t *b, const big_t *Rm, const big_t *beta, big
 }
 
 void
-big_mont_pow(const big_t *a, const big_t *b, const big_t *p, big_t *A, const big_t *R, const big_t *beta, const big_t *Rm, const big_t *u, const big_t *bk_minus, const big_t *bk_plus, const big_t *bk_plus_minus, big_t *r)
+big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_t *Rm, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus, big_t *r)
 {
 	if (a == NULL || b == NULL || p == NULL || A == NULL || R == NULL || beta == NULL || Rm == NULL || u == NULL || bk_minus == NULL || bk_plus == NULL || bk_plus_minus == NULL) {
 		return;
@@ -253,7 +264,7 @@ big_mont_pow(const big_t *a, const big_t *b, const big_t *p, big_t *A, const big
 }
 
 void
-big_sum(const big_t *a, const big_t *b, big_t *r)
+big_sum(big_t *a, big_t *b, big_t *r)
 {
 	if (a == NULL || b == NULL || r == NULL) {
 		return;
@@ -277,11 +288,12 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	uint64_t w, carry = 0;
+	uint_fast64_t w, carry = 0;
+	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
 
-	for (int i = 0; i < MAXDIGITS; ++i) {
-		w = carry + (uint64_t) a->value[i] + (uint64_t) b->value[i];
-		r->value[i] = w & BASEM;
+	for (; ap <= &a->value[31]; ap++, bp++, rp++) {
+		w = carry + (*ap) + (*bp);
+		(*rp) = w & BASE_M;
 		carry = w >> 32;
 	}
 
@@ -289,7 +301,7 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 }
 
 void
-big_sub(const big_t *a, const big_t *b, big_t *r)
+big_sub(big_t *a, big_t *b, big_t *r)
 {
 	if (a == NULL || b == NULL || r == NULL) {
 		return;
@@ -316,25 +328,25 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		return;
 	}
 
-	uint64_t w, borrow = 0;
+	uint_fast64_t w, borrow = 0;
+	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
 	big_null(r);
 	
 	if (big_gth_uns(a, b) > LESS) {
 
-		for (int i = 0; i < MAXDIGITS; ++i) {
+		for (; ap <= &a->value[31]; ap++, bp++, rp++) {
 
-			if (a->value[i] < (b->value[i] + borrow)) {
-				w = a->value[i] + BASE;
-				w = w - b->value[i] - borrow;
+			if (*ap < (*bp + borrow)) {
+				w = (*ap) + BASE - (*bp) - borrow;
 				borrow = 1;
 			}
 
 			else {
-				w = a->value[i] - b->value[i] - borrow;
+				w = (*ap) - (*bp) - borrow;
 				borrow = 0;
 			}
 
-			r->value[i] = w & BASEM;
+			(*rp) = w & BASE_M;
 		}
 
 		r->sign = false;
@@ -342,20 +354,19 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 
 	else {
 
-		for (int i = 0; i < MAXDIGITS; ++i) {
+		for (; ap <= &a->value[31]; ap++, bp++, rp++) {
 
-			if (b->value[i] < (a->value[i] + borrow)) {
-				w = b->value[i] + BASE;
-				w = w - a->value[i] - borrow;
+			if (*bp < (*ap + borrow)) {
+				w = (*bp) + BASE - (*ap) - borrow;
 				borrow = 1;
 			}
 
 			else {
-				w = b->value[i] - a->value[i] - borrow;
+				w = (*bp) - (*ap) - borrow;
 				borrow = 0;
 			}
 
-			r->value[i] = w & BASEM;
+			(*rp) = w & BASE_M;
 		}
 
 		r->sign = true;
@@ -363,31 +374,69 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 }
 
 void
-big_mul(const big_t *a, const big_t *b, big_t *r)
+big_mul(big_t *a, big_t *b, big_t *r)
 {
 	if (a == NULL || b == NULL || r == NULL) {
 		return;
 	}
 
 	big_null(r);
-	uint64_t uv;
-	uint32_t u = 0, v = 0;
+	uint_fast64_t uv;
+	uint_fast32_t u = 0, v = 0;
+	uint_fast32_t *ap = a->value, *bp = b->value;
+	uint_fast32_t *rp;
+	int i = 0, j = 0;
 
-	for (int i = 0; i < MAXDIGITS; ++i) {
+	for (; i < MAX_DIGITS; ap++, i++) {
 		u = 0;
-		for (int j = 0; j < MAXDIGITS; ++j) {
-			uv = r->value[i + j] + ((uint64_t) a->value[i] * (uint64_t) b->value[j]) + u;
-			u = uv >> BASEBITS;
-			v = uv & BASEM;
-			r->value[i + j] = v;
+		for (j = 0, bp = b->value; j < MAX_DIGITS; bp++, j++) {
+			rp = r->value + i + j;
+			uv = *(rp) + ((*ap) * (*bp)) + u;
+			u = uv >> DIGIT_BITS;
+			v = uv & BASE_M;
+			*(rp) = v;
 		} 
 	}
 
 	r->sign = (a->sign ^ b->sign);
 }
 
+/*void
+big_sqr(big_t *a, big_t *r)
+{
+	if (a == NULL || r == NULL) {
+		return;
+	}
+
+	big_null(r);
+	uint_fast64_t uv, u, tmpx, *tmpt;
+	int i, j, n;
+	n = big_get_lnt(a);
+
+	for (i = 0; i <= n; ++i) {
+		uv = r->value[2 * i] + (a->value[i] * a->value[i]);
+		r->value[i + i] = uv & BASE_M;
+		u = uv >> DIGIT_BITS;
+		tmpx = a->value[i];
+		tmpt = r->value + (2 * i + 1);
+		for (j = i + 1; j <= n; ++j) {
+			uv = tmpx * a->value[j];
+			uv = (*tmpt) + uv + uv + u;
+			*tmpt++ = uv & BASE_M;
+			u = uv >> DIGIT_BITS;
+		} 
+		while (u != 0) {
+			uv = (*tmpt) + u;
+			*tmpt++ = uv & BASE_M;
+			u = uv >> DIGIT_BITS;
+		}
+	}
+
+	r->sign = false;
+}*/
+
 bool 
-big_eql(const big_t *a, const big_t *b)
+big_eql(big_t *a, big_t *b)
 {
 	if (a == NULL || b == NULL) {
 		return false;
@@ -397,8 +446,12 @@ big_eql(const big_t *a, const big_t *b)
 		return false;
 	}
 
-	for (int i = MAXDIGITS - 1; i >= 0; i--) {
-		if (a->value[i] != b->value[i]) {
+	uint_fast32_t *ap = a->value;
+	uint_fast32_t *bp = b->value;
+
+	for (; ap <= &a->value[31]; ap++, bp++) {
+		
+		if (*ap != *bp) {
 			return false;
 		}
 	}
@@ -407,7 +460,7 @@ big_eql(const big_t *a, const big_t *b)
 }
 
 void
-big_and(const big_t *a, const big_t *b, big_t *r)
+big_and(big_t *a, big_t *b, big_t *r)
 {
 	if (a == NULL || b == NULL || r == NULL) {
 		return;
@@ -417,20 +470,23 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? m : n;
+	uint_fast32_t *ap = a->value;
+	uint_fast32_t *bp = b->value;
+	uint_fast32_t *rp = r->value;
 
 	if (a->sign == false) {
 		for (int i = 0; i <= g; i++) {
-			r->value[i] = a->value[i] & b->value[i];
+			*rp++ = (*ap++) & (*bp++);
 		}
 	}
 
 	else {
 		for (int i = 0; i <= g; i++) {
-			r->value[i] = (a->value[i] ^ b->value[i]);
+			*rp++ = (*ap++) ^ (*bp++);
 		}
 
-		if (r->value[0] < BASEM) {
-			r->value[0]++;
+		if ((*r->value) < BASE_M) {
+			(*r->value)++;
 		}
 		
 		else {
@@ -445,21 +501,25 @@ big_and(const big_t *a, const big_t *b, big_t *r)
 }
 
 void
-big_rst_word(const big_t *a, int n, big_t *r)
+big_rst_word(big_t *a, int n, big_t *r)
 {
 	if (a == NULL || r == NULL || n == 0) {
 		return;
 	}
-
-	for (int i = 0; i < MAXDIGITS; i++) {
-		r->value[i] = a->value[i + n];
+	
+	big_null(r);
+	uint_fast32_t *ap = a->value + n;
+	uint_fast32_t *rp = r->value;
+	
+	for (int i = 0; i < MAX_DIGITS; i++) {
+		*rp++ = *ap++;
 	}
 
 	r->sign = a->sign;
 }
 
 void
-big_rst(const big_t *a, big_t *r)
+big_rst(big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
 		return;
@@ -468,7 +528,7 @@ big_rst(const big_t *a, big_t *r)
 	big_null(r);
 	int lsb = 0;
 
-	for (int i = MAXDIGITS - 1; i >= 0; --i) {
+	for (int i = MAX_DIGITS - 1; i >= 0; --i) {
 		r->value[i] = lsb ? (a->value[i] | 0x100000000) >> 1 : a->value[i] >> 1;
 		lsb = a->value[i] & 1;
 	}
@@ -477,41 +537,46 @@ big_rst(const big_t *a, big_t *r)
 }
 
 void
-big_lst_word(const big_t *a, int n, big_t *r)
+big_lst_word(big_t *a, int n, big_t *r)
 {
 	if (a == NULL || r == NULL || n == 0) {
 		return;
 	}
 
+	uint_fast32_t *ap = a->value;
+	uint_fast32_t *rp = r->value + n;
 	big_null(r);
-	for (int i = 0; i < MAXDIGITS; i++) {
-		r->value[i + n] = a->value[i];
+	
+	for (int i = 0; i < MAX_DIGITS; i++) {
+		*rp++ = *ap++;
 	}
 
 	r->sign = a->sign;
 }
 
 void
-big_lst(const big_t *a, big_t *r)
+big_lst(big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
 		return;
 	}
 
-	uint64_t t, carry = 0;
+	uint_fast64_t t, carry = 0;
+	uint_fast32_t *ap = a->value;
+	uint_fast32_t *rp = r->value;
 	big_null(r);
 
-	for (int i = 0; i < MAXDIGITS; ++i) {
-		t = (a->value[i] << 1) + carry;
-		r->value[i] = t & BASEM;
-		carry = t >> BASEBITS;
+	for (int i = 0; i < MAX_DIGITS; ++i) {
+		t = (*ap++ << 1) + carry;
+		*rp++ = t & BASE_M;
+		carry = t >> DIGIT_BITS;
 	}
 
 	r->sign = a->sign;
 }
 
 void
-big_to_hex(const big_t *a)
+big_to_hex(big_t *a)
 {
 	if (a == NULL) {
 		return;
@@ -521,14 +586,15 @@ big_to_hex(const big_t *a)
 	fputs("0x", stdout);
 
 	for (int i = n; i >= 0; --i) {
-		a->value[i] > 0xFFFFFFF ? printf("%lx", a->value[i]) : printf("%08lx", a->value[i]);
+		uint_fast32_t *ap = a->value + i;
+		*ap > 0xFFFFFFF ? printf("%lx", *ap) : printf("%08lx", *ap);
 	}
 
 	fputs("\n", stdout);
 }
 
 void
-big_mod(const big_t *a, const big_t *p, big_t *r)
+big_mod(big_t *a, big_t *p, big_t *r)
 {
 	if (a == NULL || r == NULL) {
 		return;
@@ -554,7 +620,7 @@ big_mod(const big_t *a, const big_t *p, big_t *r)
 }
 
 void
-big_barrett_mod(const big_t *a, const big_t *p, const big_t *u, const big_t *bk_minus, const big_t *bk_plus, const big_t *bk_plus_minus, big_t *r)
+big_barrett_mod(big_t *a, big_t *p, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus, big_t *r)
 {
 	if (a == NULL || r == NULL){
 		return;
@@ -585,17 +651,17 @@ big_barrett_mod(const big_t *a, const big_t *p, const big_t *u, const big_t *bk_
 }
 
 bool
-big_odd(const big_t *a)
+big_odd(big_t *a)
 {
 	if (a == NULL) {
 		return false;
 	}
 
-	return (a->value[0] & 1);
+	return (*(a->value) & 1);
 }
 
 void
-big_mod_inv(const big_t *a, const big_t *b, big_t *r)
+big_mod_inv(big_t *a, big_t *b, big_t *r)
 {
 	if (a == NULL || b == NULL || r == NULL) {
 		return;
