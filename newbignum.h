@@ -6,7 +6,7 @@
 
 // Macros for organization
 #define MAXDIGITS		16
-#define WORDSSIZE		32 * sizeof(uint64_t)
+#define WORDSSIZE		32 * sizeof(uint32_t)
 #define BASE 			0x100000000u
 #define BASEM			0xFFFFFFFFu
 #define BASEBITS		32
@@ -27,7 +27,7 @@ static const char A_25519[] 			= "100110";
 
 // Big Integer structure
 typedef struct _big_t{
-	uint64_t 	value[32];
+	uint32_t 	value[32];
 	bool 		sign;
 }big_t;
 

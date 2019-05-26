@@ -79,7 +79,7 @@ main(int argc, char const *argv[])
 
 	printf("Mod Inverse\n");
 	start = clock();
-    big_mod_inv(b, p, r);
+    big_mod_inv(a, p, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);

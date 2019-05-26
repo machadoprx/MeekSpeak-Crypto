@@ -43,7 +43,7 @@ big_to_bin(const big_t *a)
 	memset(bin, 0, 512);
 
 	for (int i = k; i >= 0; --i) {	
-		for (uint64_t mask = 0x80000000u; mask > 0; mask >>= 1) {
+		for (uint32_t mask = 0x80000000u; mask > 0; mask >>= 1) {
 			*p++ = (mask & a->value[i]) ? '1' : '0';
 		}
 	}
@@ -73,10 +73,10 @@ big_cpy(const big_t *a, big_t *r)
 	r->sign = a->sign; 
 }
 
-static uint64_t
+static uint32_t
 bin_to_int(const char *num)
 {
-	uint64_t r = 0;
+	uint32_t r = 0;
 
 	for (int i = 0; i < BASEBITS; i++) {
 		r = (num[i] == '1') ? (r << 1) ^ 1 : r << 1;
@@ -100,24 +100,30 @@ big_gth(const big_t *a, const big_t *b)
 
 		if (a->sign == false) {
 			for (int i = MAXDIGITS - 1; i >= 0; i--) {
+
 				if (a->value[i] < b->value[i]) {
 					return 0;
 				}
+
 				else if (a->value[i] > b->value[i]) {
 					return 2;
 				}
+
 			}
 
 		}
 
 		else{
 			for (int i = MAXDIGITS - 1; i >= 0; i--) {
+
 				if (a->value[i] > b->value[i]) {
 					return 0;
 				}
+
 				else if (a->value[i] < b->value[i]) {
 					return 2;
 				}
+				
 			}
 
 		}
@@ -134,9 +140,11 @@ big_gth_uns(const big_t *a, const big_t *b)
 	}
 
 	for (int i = MAXDIGITS - 1; i >= 0; i--) {
+
 		if (a->value[i] < b->value[i]) {
 			return 0;
 		}
+
 		else if (a->value[i] > b->value[i]) {
 			return 2;
 		}
@@ -269,13 +277,10 @@ big_sum(const big_t *a, const big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	int carry;
-	uint64_t w = a->value[0] + b->value[0];
-	r->value[0] = w & BASEM;
-	carry = w >> 32;
+	uint64_t w, carry = 0;
 
-	for (int i = 1; i < MAXDIGITS; ++i) {
-		w = carry + a->value[i] + b->value[i];
+	for (int i = 0; i < MAXDIGITS; ++i) {
+		w = carry + (uint64_t) a->value[i] + (uint64_t) b->value[i];
 		r->value[i] = w & BASEM;
 		carry = w >> 32;
 	}
@@ -311,28 +316,22 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 		return;
 	}
 
+	uint64_t w, borrow = 0;
 	big_null(r);
-	int e = 0;
-	int64_t w = 0;
 	
 	if (big_gth_uns(a, b) > LESS) {
-		w = a->value[0] - b->value[0];
 
-		if (w < 0) {
-			w = w + BASE;
-			e = 1;
-		}
+		for (int i = 0; i < MAXDIGITS; ++i) {
 
-		r->value[0] = w & BASEM;
-		for (int i = 1; i < MAXDIGITS; ++i) {
-			w = a->value[i] - b->value[i] - e;
-
-			if (w < 0) {
-				w = w + BASE;
-				e = 1;
+			if (a->value[i] < (b->value[i] + borrow)) {
+				w = a->value[i] + BASE;
+				w = w - b->value[i] - borrow;
+				borrow = 1;
 			}
+
 			else {
-				e = 0;
+				w = a->value[i] - b->value[i] - borrow;
+				borrow = 0;
 			}
 
 			r->value[i] = w & BASEM;
@@ -342,28 +341,23 @@ big_sub(const big_t *a, const big_t *b, big_t *r)
 	}
 
 	else {
-		w = b->value[0] - a->value[0];
-		
-		if (w < 0) {
-			w = w + BASE;
-			e = 1;
-		}
 
-		r->value[0] = w & BASEM;
-		for (int i = 1; i < MAXDIGITS; ++i) {
+		for (int i = 0; i < MAXDIGITS; ++i) {
 
-			w = b->value[i] - a->value[i] - e;
-
-			if (w < 0) {
-				w = w + BASE;
-				e = 1;
+			if (b->value[i] < (a->value[i] + borrow)) {
+				w = b->value[i] + BASE;
+				w = w - a->value[i] - borrow;
+				borrow = 1;
 			}
+
 			else {
-				e = 0;
+				w = b->value[i] - a->value[i] - borrow;
+				borrow = 0;
 			}
 
 			r->value[i] = w & BASEM;
 		}
+
 		r->sign = true;
 	}
 }
@@ -382,8 +376,8 @@ big_mul(const big_t *a, const big_t *b, big_t *r)
 	for (int i = 0; i < MAXDIGITS; ++i) {
 		u = 0;
 		for (int j = 0; j < MAXDIGITS; ++j) {
-			uv = r->value[i + j] + (a->value[i] * b->value[j]) + u;
-			u = (uv >> BASEBITS) & BASEM;
+			uv = r->value[i + j] + ((uint64_t) a->value[i] * (uint64_t) b->value[j]) + u;
+			u = uv >> BASEBITS;
 			v = uv & BASEM;
 			r->value[i + j] = v;
 		} 
