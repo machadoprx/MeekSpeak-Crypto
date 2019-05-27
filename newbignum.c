@@ -290,8 +290,11 @@ big_sum(big_t *a, big_t *b, big_t *r)
 	big_null(r);
 	uint_fast64_t w, carry = 0;
 	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b);
+	int g = n >= m ? n : m;
 
-	for (; ap <= &a->value[MAX_DIGITS - 1]; ap++, bp++, rp++) {
+	for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
 		w = carry + (*ap) + (*bp);
 		(*rp) = w & BASE_M;
 		carry = w >> 32;
@@ -330,11 +333,14 @@ big_sub(big_t *a, big_t *b, big_t *r)
 
 	uint_fast64_t w, borrow = 0;
 	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b);
+	int g = n >= m ? n : m;
 	big_null(r);
 	
 	if (big_gth_uns(a, b) > LESS) {
 
-		for (; ap <= &a->value[MAX_DIGITS - 1]; ap++, bp++, rp++) {
+		for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
 
 			if (*ap < (*bp + borrow)) {
 				w = (*ap) + BASE - (*bp) - borrow;
@@ -354,7 +360,7 @@ big_sub(big_t *a, big_t *b, big_t *r)
 
 	else {
 
-		for (; ap <= &a->value[MAX_DIGITS - 1]; ap++, bp++, rp++) {
+		for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
 
 			if (*bp < (*ap + borrow)) {
 				w = (*bp) + BASE - (*ap) - borrow;
@@ -385,10 +391,12 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	uint_fast32_t u, v;
 	uint_fast32_t *ap = a->value, *bp;
 	uint_fast32_t *rp = r->value, *trp;
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b);
 
-	for (; ap <= &a->value[MAX_DIGITS - 1]; ap++, rp++) {
+	for (; ap <= &a->value[n + 1]; ap++, rp++) {
 		u = 0;
-		for (trp = rp, bp = b->value; bp <= &b->value[MAX_DIGITS - 1]; bp++, trp++) {
+		for (trp = rp, bp = b->value; bp <= &b->value[m + 1]; bp++, trp++) {
 			uv = (*trp) + ((*ap) * (*bp)) + u;
 			u = uv >> DIGIT_BITS;
 			v = uv & BASE_M;
@@ -446,8 +454,11 @@ big_eql(big_t *a, big_t *b)
 
 	uint_fast32_t *ap = a->value;
 	uint_fast32_t *bp = b->value;
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b);
+	int g = n >= m ? n : m;
 
-	for (; ap <= &a->value[MAX_DIGITS - 1]; ap++, bp++) {
+	for (; ap <= &a->value[g]; ap++, bp++) {
 		
 		if (*ap != *bp) {
 			return false;
@@ -499,17 +510,18 @@ big_and(big_t *a, big_t *b, big_t *r)
 }
 
 void
-big_rst_word(big_t *a, int n, big_t *r)
+big_rst_word(big_t *a, int s, big_t *r)
 {
-	if (a == NULL || r == NULL || n == 0) {
+	if (a == NULL || r == NULL || s == 0) {
 		return;
 	}
 	
 	big_null(r);
-	uint_fast32_t *ap = a->value + n;
+	uint_fast32_t *ap = a->value + s;
 	uint_fast32_t *rp = r->value;
+	int n = big_get_lnt(a);
 	
-	for (; rp <= &r->value[MAX_DIGITS - 1]; rp++, ap++) {
+	for (; rp <= &r->value[n]; rp++, ap++) {
 		*rp = *ap;
 	}
 
@@ -525,8 +537,9 @@ big_rst(big_t *a, big_t *r)
 
 	big_null(r);
 	int lsb = 0;
-	uint_fast32_t *ap = a->value + (MAX_DIGITS - 1);
-	uint_fast32_t *rp = r->value + (MAX_DIGITS - 1);
+	int n = big_get_lnt(a);
+	uint_fast32_t *ap = a->value + (n);
+	uint_fast32_t *rp = r->value + (n);
 
 	for (; rp >= &r->value[0]; ap--, rp--) {
 		*rp = lsb ? ((*ap) | 0x100000000) >> 1 : (*ap) >> 1;
@@ -537,17 +550,18 @@ big_rst(big_t *a, big_t *r)
 }
 
 void
-big_lst_word(big_t *a, int n, big_t *r)
+big_lst_word(big_t *a, int s, big_t *r)
 {
-	if (a == NULL || r == NULL || n == 0) {
+	if (a == NULL || r == NULL || s == 0) {
 		return;
 	}
 
+	int n = big_get_lnt(a);
 	uint_fast32_t *ap = a->value;
-	uint_fast32_t *rp = r->value + n;
+	uint_fast32_t *rp = r->value + s;
 	big_null(r);
 	
-	for (; rp <= &r->value[MAX_DIGITS - 1]; rp++, ap++) {
+	for (; rp <= &r->value[n + s]; rp++, ap++) {
 		*rp = *ap;
 	}
 
@@ -564,9 +578,10 @@ big_lst(big_t *a, big_t *r)
 	uint_fast64_t t, carry = 0;
 	uint_fast32_t *ap = a->value;
 	uint_fast32_t *rp = r->value;
+	int n = big_get_lnt(a);
 	big_null(r);
 
-	for (; rp <= &r->value[MAX_DIGITS - 1]; rp++, ap++) {
+	for (; rp <= &r->value[n + 1]; rp++, ap++) {
 		t = (*ap << 1) + carry;
 		*rp = t & BASE_M;
 		carry = t >> DIGIT_BITS;

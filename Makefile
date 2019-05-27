@@ -1,2 +1,2 @@
 all:
-	gcc main.c newbignum.c -O3 -g
+	gcc main.c newbignum.c -Ofast

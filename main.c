@@ -146,7 +146,7 @@ main(int argc, char const *argv[])
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
-	/*
+	
 	bin_to_big(A_25519, A);
 	printf("legendre\n");
 	start = clock();
@@ -155,7 +155,7 @@ main(int argc, char const *argv[])
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	printf("%d\n", x);
 	printf("%lf\n", cpu_time_used);
-	printf("\n");*/
+	printf("\n");
 
 	big_free(a);
 	big_free(b);
