@@ -18,11 +18,11 @@ big_free(big_t *a)
 	free(a);
 }
 
-static int
+int
 big_get_lnt(big_t *a)
 {
-	int k = MAX_DIGITS - 1;
-	uint_fast32_t *ap = a->value + k;
+	register int k = MAX_DIGITS - 1;
+	register dig_t *ap = a->value + k;
 
 	while (*ap-- == 0) {
 		k--;
@@ -39,13 +39,13 @@ big_to_bin(big_t *a)
 	}
 
 	char *bin = malloc(512);
-	char *p = bin;
-	int k = big_get_lnt(a);	
-	uint_fast32_t *ap;
+	register char *p = bin;
+	register int k = big_get_lnt(a);	
+	register dig_t *ap;
 	memset(bin, 0, 512);
 
 	for (ap = a->value + k; ap >= &a->value[0]; ap--) {
-		for (uint_fast32_t mask = 0x80000000u; mask > 0; mask >>= 1) {
+		for (register dig_t mask = 0x80000000u; mask > 0; mask >>= 1) {
 			*p++ = (mask & (*ap)) ? '1' : '0';
 		}
 	}
@@ -75,13 +75,13 @@ big_cpy(big_t *a, big_t *r)
 	r->sign = a->sign; 
 }
 
-static uint_fast32_t
+static dig_t
 bin_to_int(char *num)
 {
-	uint_fast32_t r = 0;
-	char *p = num;
+	register dig_t r = 0;
+	register char *p = num;
 
-	while (p <= &num[31]) {
+	while (p <= &num[DIGIT_BITS - 1]) {
 		r = (*p++ == '1') ? (r << 1) ^ 1 : r << 1;
 	}
 
@@ -100,37 +100,13 @@ big_gth(big_t *a, big_t *b)
 	}
 
 	else if (a->sign == b->sign) {
-
 		if (a->sign == false) {
-			for (int i = MAX_DIGITS - 1; i >= 0; i--) {
-
-				if (a->value[i] < b->value[i]) {
-					return 0;
-				}
-
-				else if (a->value[i] > b->value[i]) {
-					return 2;
-				}
-
-			}
-
+			return big_gth_uns(a, b);
 		}
 
 		else{
-			for (int i = MAX_DIGITS - 1; i >= 0; i--) {
-
-				if (a->value[i] > b->value[i]) {
-					return 0;
-				}
-
-				else if (a->value[i] < b->value[i]) {
-					return 2;
-				}
-				
-			}
-
+			return big_gth_uns(b, a);
 		}
-		return 1;
 	}
 	return 0;
 }
@@ -142,9 +118,19 @@ big_gth_uns(big_t *a, big_t *b)
 		return 0;
 	}
 
-	uint_fast32_t *ap = a->value + (MAX_DIGITS - 1);
-    uint_fast32_t *bp = b->value + (MAX_DIGITS - 1);
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b);
+	
+	if (n != m) {
+		if (n > m) {
+			return 2;
+		}
+		return 0;
+	}
 
+	register dig_t *ap = a->value + n;
+    register dig_t *bp = b->value + n;
+	
 	for (;ap >= &a->value[0]; ap--, bp--) {
 
 		if (*ap < *bp) {
@@ -163,8 +149,8 @@ static char*
 padd_str(char *str)
 {
 	char *mask = malloc(sizeof(char) * 512);
-	char *p = str + (strlen(str) - 1);
-	char *m = mask + 511;
+	register char *p = str + (strlen(str) - 1);
+	register char *m = mask + 511;
 	memset(mask, '0', sizeof(char) * 512);
 
 	while (*p) {
@@ -182,16 +168,17 @@ bin_to_big(char *src, big_t *r)
 	}
 
 	char *num = padd_str(src);
-	char *nump = num;
 	char digit[DIGIT_BITS];
-	uint_fast32_t *rp = r->value + (MAX_DIGITS - 1);
+	register char *nump = num;
+	register dig_t *rp = r->value + (MAX_DIGITS - 1);
+	register char *digp;
 	big_null(r);
 
 	for (; rp >= &r->value[0]; rp--) {
-		char *digp = digit;
+		digp = digit;
 
-		while (digp <= &digit[31]) {
-			*digp++ = *nump++;
+		while (digp <= &digit[DIGIT_BITS - 1]) {
+			*(digp++) = *(nump++);
 		}
 
 		*rp = bin_to_int(digit);
@@ -242,7 +229,7 @@ big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_
 	big_t xn;
 	big_t t;
 	char *bin_b = big_to_bin(b);
-	char *bit = bin_b;
+	register char *bit = bin_b;
 	big_mul(a, R, &t);
 	big_barrett_mod(&t, p, u, bk_minus, bk_plus, bk_plus_minus, &xn);
 
@@ -251,7 +238,7 @@ big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_
 	}
 
 	while (*bit) {
-		big_mul(A, A, &t);
+		big_sqr(A, &t);
 		big_mont(&t, p, Rm, beta, A);
 		if (*bit++ == '1') {
 			big_mul(A, &xn, &t);
@@ -288,8 +275,8 @@ big_sum(big_t *a, big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	uint_fast64_t w, carry = 0;
-	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
+	register dig_t w, carry = 0;
+	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? n : m;
@@ -331,8 +318,8 @@ big_sub(big_t *a, big_t *b, big_t *r)
 		return;
 	}
 
-	uint_fast64_t w, borrow = 0;
-	uint_fast32_t *ap = a->value, *bp = b->value, *rp = r->value;
+	register dig_t w, borrow = 0;
+	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? n : m;
@@ -340,7 +327,7 @@ big_sub(big_t *a, big_t *b, big_t *r)
 	
 	if (big_gth_uns(a, b) > LESS) {
 
-		for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
+		for (; ap <= &a->value[g]; ap++, bp++, rp++) {
 
 			if (*ap < (*bp + borrow)) {
 				w = (*ap) + BASE - (*bp) - borrow;
@@ -360,7 +347,7 @@ big_sub(big_t *a, big_t *b, big_t *r)
 
 	else {
 
-		for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
+		for (; ap <= &a->value[g]; ap++, bp++, rp++) {
 
 			if (*bp < (*ap + borrow)) {
 				w = (*bp) + BASE - (*ap) - borrow;
@@ -387,10 +374,9 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	uint_fast64_t uv;
-	uint_fast32_t u, v;
-	uint_fast32_t *ap = a->value, *bp;
-	uint_fast32_t *rp = r->value, *trp;
+	register dig_t uv;
+	register dig_t u, v;
+	register dig_t *ap = a->value, *bp, *rp = r->value, *trp;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 
@@ -407,7 +393,7 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	r->sign = (a->sign ^ b->sign);
 }
 
-/*void
+void
 big_sqr(big_t *a, big_t *r)
 {
 	if (a == NULL || r == NULL) {
@@ -415,31 +401,36 @@ big_sqr(big_t *a, big_t *r)
 	}
 
 	big_null(r);
-	uint_fast64_t uv, u, tmpx, *tmpt;
-	int i, j, n;
-	n = big_get_lnt(a);
+	register twodig_t uv, u;
+	register dig_t *tmpt, *ap = a->value, *rp, *tmpap, tmpx;
+	int n = big_get_lnt(a);
 
-	for (i = 0; i <= n; ++i) {
-		uv = r->value[2 * i] + (a->value[i] * a->value[i]);
-		r->value[i + i] = uv & BASE_M;
-		u = uv >> DIGIT_BITS;
-		tmpx = a->value[i];
-		tmpt = r->value + (2 * i + 1);
-		for (j = i + 1; j <= n; ++j) {
-			uv = tmpx * a->value[j];
+	for (int i = 0; i <= n; ++i, ap++) {
+		
+		rp = r->value + i + i;
+		uv = (*rp) + ((twodig_t)(*ap) * (twodig_t)(*ap));
+		(*rp) = uv & BASE_M;
+		u = (uv >> 32);
+		tmpx = (*ap);
+		tmpap = ap + 1;
+		tmpt = rp + 1;
+
+		for (; tmpap <= &a->value[n]; tmpap++, tmpt++) {
+			uv = tmpx * (*tmpap);
 			uv = (*tmpt) + uv + uv + u;
-			*tmpt++ = uv & BASE_M;
-			u = uv >> DIGIT_BITS;
+			*tmpt = uv & BASE_M;
+			u = (uv >> 32);
 		} 
+
 		while (u != 0) {
 			uv = (*tmpt) + u;
-			*tmpt++ = uv & BASE_M;
-			u = uv >> DIGIT_BITS;
+			*(tmpt++) = uv & BASE_M;
+			u = (uv >> 32);
 		}
 	}
 
 	r->sign = false;
-}*/
+}
 
 bool 
 big_eql(big_t *a, big_t *b)
@@ -452,8 +443,7 @@ big_eql(big_t *a, big_t *b)
 		return false;
 	}
 
-	uint_fast32_t *ap = a->value;
-	uint_fast32_t *bp = b->value;
+	register dig_t *ap = a->value, *bp = b->value;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? n : m;
@@ -479,9 +469,7 @@ big_and(big_t *a, big_t *b, big_t *r)
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? m : n;
-	uint_fast32_t *ap = a->value;
-	uint_fast32_t *bp = b->value;
-	uint_fast32_t *rp = r->value;
+	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
 
 	if (a->sign == false) {
 		for (; rp <= &r->value[g]; rp++, ap++, bp++) {
@@ -516,10 +504,9 @@ big_rst_word(big_t *a, int s, big_t *r)
 		return;
 	}
 	
-	big_null(r);
-	uint_fast32_t *ap = a->value + s;
-	uint_fast32_t *rp = r->value;
+	register dig_t *ap = a->value + s, *rp = r->value;
 	int n = big_get_lnt(a);
+	big_null(r);
 	
 	for (; rp <= &r->value[n]; rp++, ap++) {
 		*rp = *ap;
@@ -535,14 +522,13 @@ big_rst(big_t *a, big_t *r)
 		return;
 	}
 
-	big_null(r);
-	int lsb = 0;
 	int n = big_get_lnt(a);
-	uint_fast32_t *ap = a->value + (n);
-	uint_fast32_t *rp = r->value + (n);
-
+	register dig_t *ap = a->value + n, *rp = r->value + n;
+	register int lsb = 0;
+	big_null(r);
+	
 	for (; rp >= &r->value[0]; ap--, rp--) {
-		*rp = lsb ? ((*ap) | 0x100000000) >> 1 : (*ap) >> 1;
+		*rp = lsb ? ((*ap) | BASE) >> 1 : (*ap) >> 1;
 		lsb = (*ap) & 1;
 	}
 
@@ -557,8 +543,7 @@ big_lst_word(big_t *a, int s, big_t *r)
 	}
 
 	int n = big_get_lnt(a);
-	uint_fast32_t *ap = a->value;
-	uint_fast32_t *rp = r->value + s;
+	register dig_t *ap = a->value, *rp = r->value + s;
 	big_null(r);
 	
 	for (; rp <= &r->value[n + s]; rp++, ap++) {
@@ -575,10 +560,9 @@ big_lst(big_t *a, big_t *r)
 		return;
 	}
 
-	uint_fast64_t t, carry = 0;
-	uint_fast32_t *ap = a->value;
-	uint_fast32_t *rp = r->value;
 	int n = big_get_lnt(a);
+	register dig_t t, carry = 0;
+	register dig_t *ap = a->value, *rp = r->value;
 	big_null(r);
 
 	for (; rp <= &r->value[n + 1]; rp++, ap++) {
@@ -598,13 +582,12 @@ big_to_hex(big_t *a)
 	}
 
 	int n = big_get_lnt(a);
-	uint_fast32_t *ap = a->value + n;
-	fputs("0x", stdout);
+	register dig_t *ap = a->value + n;
 
+	fputs("0x", stdout);
 	for (; ap >= &a->value[0]; --ap) {
 		*ap > 0xFFFFFFF ? printf("%lx", *ap) : printf("%08lx", *ap);
 	}
-
 	fputs("\n", stdout);
 }
 
