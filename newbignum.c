@@ -264,13 +264,7 @@ big_sum(big_t *a, big_t *b, big_t *r)
 		big_cpy(b, &b1);
 		a1.sign = false;
 		b1.sign = false;
-
-		if (a->sign == false) {
-			big_sub(&a1, &b1, r);
-		}
-		else {
-			big_sub(&b1, &a1, r);
-		}
+		a->sign ? big_sub(&b1, &a1, r) : big_sub(&a1, &b1, r);
 		return;
 	}
 
@@ -340,55 +334,56 @@ big_sub(big_t *a, big_t *b, big_t *r)
 	}
 
 	register int64_t w, borrow = 0;
-	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
-
+	register dig_t *gp, *lp, *rp = r->value;
+	int n = big_get_lnt(a);
+	int m = big_get_lnt(b), t = -1;
 	big_null(r);
-	
+
 	if (big_gth_uns(a, b) > LESS) {
-
-		int n = big_get_lnt(a);
-
-		for (; rp <= &r->value[n]; ap++, bp++, rp++) {
-
-			w = (*ap) - (*bp) - borrow;
-
-			if (w < 0) {
-				w += BASE;
-				borrow = 1;
-			}
-			
-			else {
-				borrow = 0;
-			}
-
-			(*rp) = w;
-		}
-
-		r->sign = false;
+		gp = a->value;
+		lp = b->value;
 	}
-
 	else {
+		gp = b->value;
+		lp = a->value;
+		t = n; n = m; m = t; m++;
+	}
+	
+	for (; rp <= &r->value[m]; gp++, lp++, rp++) {
 
-		int m = big_get_lnt(b);
+		w = (*gp) - (*lp) - borrow;
 
-		for (; rp <= &r->value[m]; ap++, bp++, rp++) {
-
-			w = (*bp) - (*ap) - borrow;
-
-			if (w < 0) {
-				w += BASE;
-				borrow = 1;
-			}
-			
-			else {
-				borrow = 0;
-			}
-
-			(*rp) = w;
+		if (w < 0) {
+			w += BASE;
+			borrow = 1;
+		}
+		
+		else {
+			borrow = 0;
 		}
 
-		r->sign = true;
+		(*rp) = w;
 	}
+
+	while (borrow) {
+		w = (*gp++) - borrow;
+
+		if (w < 0) {
+			w += BASE;
+			borrow = 1;
+		}
+		
+		else {
+			borrow = 0;
+		}
+
+		(*rp++) = w;
+	}
+
+	while (rp <= &r->value[n]) {
+		(*rp++) = (*gp++);
+	}
+	r->sign = t == -1 ? false : true;
 }
 
 void
