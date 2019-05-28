@@ -4,8 +4,6 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-typedef uint_fast64_t 	dig_t;
-typedef __uint128_t twodig_t;
 // Macros for organization
 #define MAX_DIGITS		16
 #define WORDS_SIZE		32 * sizeof(dig_t)
@@ -15,11 +13,13 @@ typedef __uint128_t twodig_t;
 #define LESS 			0
 #define EQUAL 			1
 #define GREATER 		2
+#define twodig_t 		__uint128_t
+#define dig_t			uint64_t
 
 // Big Integer structure
 typedef struct _big_t{
-	dig_t			value[32];
-	bool 			sign;
+	dig_t	value[32];
+	bool 	sign;
 }big_t;
 
 // Initialization, copy and free's functions
@@ -47,8 +47,8 @@ void 	big_and				(big_t *, big_t *, big_t *);
 int 	big_gth				(big_t *, big_t *);
 int 	big_gth_uns			(big_t *, big_t *);
 int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
-void 	bin_to_big			(char *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);
 bool 	big_odd				(big_t *);
 char* 	big_to_bin			(big_t *);
+void 	bin_to_big			(char *, big_t *);

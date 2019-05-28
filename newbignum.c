@@ -276,15 +276,36 @@ big_sum(big_t *a, big_t *b, big_t *r)
 
 	big_null(r);
 	register dig_t w, carry = 0;
-	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
+	register dig_t *mp, *lp, *rp = r->value;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
-	int g = n >= m ? n : m;
 
-	for (; ap <= &a->value[g + 1]; ap++, bp++, rp++) {
-		w = carry + (*ap) + (*bp);
+	if (n >= m) {
+		lp = b->value;
+		mp = a->value;
+	}
+	else {
+		lp = a->value;
+		mp = b->value;
+		int t = n;
+		n = m;
+		m = t;
+	}
+
+	for (; rp <= &r->value[m]; lp++, mp++, rp++) {
+		w = carry + (*mp) + (*lp);
 		(*rp) = w & BASE_M;
-		carry = w >> 32;
+		carry = w >> DIGIT_BITS;
+	}
+
+	while (carry) {
+		w = carry + (*mp++);
+		(*rp++) = w & BASE_M;
+		carry = w >> DIGIT_BITS;
+	}
+
+	while (rp <= &r->value[n]) {
+		(*rp++) = (*mp++);
 	}
 
 	r->sign = a->sign ? true : false;
@@ -318,28 +339,29 @@ big_sub(big_t *a, big_t *b, big_t *r)
 		return;
 	}
 
-	register dig_t w, borrow = 0;
+	register int64_t w, borrow = 0;
 	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
-	int g = n >= m ? n : m;
+
 	big_null(r);
 	
 	if (big_gth_uns(a, b) > LESS) {
 
-		for (; ap <= &a->value[g]; ap++, bp++, rp++) {
+		int n = big_get_lnt(a);
 
-			if (*ap < (*bp + borrow)) {
-				w = (*ap) + BASE - (*bp) - borrow;
+		for (; rp <= &r->value[n]; ap++, bp++, rp++) {
+
+			w = (*ap) - (*bp) - borrow;
+
+			if (w < 0) {
+				w += BASE;
 				borrow = 1;
 			}
-
+			
 			else {
-				w = (*ap) - (*bp) - borrow;
 				borrow = 0;
 			}
 
-			(*rp) = w & BASE_M;
+			(*rp) = w;
 		}
 
 		r->sign = false;
@@ -347,19 +369,22 @@ big_sub(big_t *a, big_t *b, big_t *r)
 
 	else {
 
-		for (; ap <= &a->value[g]; ap++, bp++, rp++) {
+		int m = big_get_lnt(b);
 
-			if (*bp < (*ap + borrow)) {
-				w = (*bp) + BASE - (*ap) - borrow;
+		for (; rp <= &r->value[m]; ap++, bp++, rp++) {
+
+			w = (*bp) - (*ap) - borrow;
+
+			if (w < 0) {
+				w += BASE;
 				borrow = 1;
 			}
-
+			
 			else {
-				w = (*bp) - (*ap) - borrow;
 				borrow = 0;
 			}
 
-			(*rp) = w & BASE_M;
+			(*rp) = w;
 		}
 
 		r->sign = true;
@@ -374,19 +399,17 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	register dig_t uv;
-	register dig_t u, v;
+	register dig_t uv, u;
 	register dig_t *ap = a->value, *bp, *rp = r->value, *trp;
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 
-	for (; ap <= &a->value[n + 1]; ap++, rp++) {
+	for (; ap <= &a->value[n]; ap++, rp++) {
 		u = 0;
 		for (trp = rp, bp = b->value; bp <= &b->value[m + 1]; bp++, trp++) {
 			uv = (*trp) + ((*ap) * (*bp)) + u;
 			u = uv >> DIGIT_BITS;
-			v = uv & BASE_M;
-			(*trp) = v;
+			(*trp) = uv & BASE_M;
 		} 
 	}
 
@@ -410,7 +433,7 @@ big_sqr(big_t *a, big_t *r)
 		rp = r->value + i + i;
 		uv = (*rp) + ((twodig_t)(*ap) * (twodig_t)(*ap));
 		(*rp) = uv & BASE_M;
-		u = (uv >> 32);
+		u = uv >> DIGIT_BITS;
 		tmpx = (*ap);
 		tmpap = ap + 1;
 		tmpt = rp + 1;
@@ -419,13 +442,13 @@ big_sqr(big_t *a, big_t *r)
 			uv = tmpx * (*tmpap);
 			uv = (*tmpt) + uv + uv + u;
 			*tmpt = uv & BASE_M;
-			u = (uv >> 32);
+			u = uv >> DIGIT_BITS;
 		} 
 
 		while (u != 0) {
 			uv = (*tmpt) + u;
 			*(tmpt++) = uv & BASE_M;
-			u = (uv >> 32);
+			u = uv >> DIGIT_BITS;
 		}
 	}
 

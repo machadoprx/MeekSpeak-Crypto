@@ -1,2 +1,2 @@
 all:
-	gcc main.c newbignum.c -pipe -mtune=skylake -march=skylake -Ofast -Wall
+	gcc main.c newbignum.c -pipe -m64 -march=skylake -Ofast -Wall
