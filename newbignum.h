@@ -5,6 +5,8 @@
 #include <stdint.h>
 
 // Macros for organization
+#define twodig_t 		__uint128_t
+#define dig_t			uint64_t
 #define MAX_DIGITS		16
 #define WORDS_SIZE		32 * sizeof(dig_t)
 #define BASE 			0x100000000u
@@ -13,8 +15,6 @@
 #define LESS 			0
 #define EQUAL 			1
 #define GREATER 		2
-#define twodig_t 		__uint128_t
-#define dig_t			uint64_t
 
 // Big Integer structure
 typedef struct _big_t{
@@ -52,3 +52,4 @@ void 	big_to_hex			(big_t *);
 bool 	big_odd				(big_t *);
 char* 	big_to_bin			(big_t *);
 void 	bin_to_big			(char *, big_t *);
+void	hex_to_big			(char *, big_t *);

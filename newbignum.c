@@ -34,10 +34,6 @@ big_get_lnt(big_t *a)
 char*
 big_to_bin(big_t *a)
 {
-	if (a == NULL) {
-		return NULL;
-	}
-
 	char *bin = malloc(512);
 	register char *p = bin;
 	register int k = big_get_lnt(a);	
@@ -56,10 +52,6 @@ big_to_bin(big_t *a)
 void
 big_null(big_t *a)
 {
-	if (a == NULL) {
-		return;
-	}
-
 	memset(a->value, 0, WORDS_SIZE);
 	a->sign = false;
 }
@@ -67,10 +59,6 @@ big_null(big_t *a)
 void
 big_cpy(big_t *a, big_t *r)
 {
-	if (a == NULL || r == NULL) {
-		return;
-	}
-
 	memcpy(r->value, a->value, WORDS_SIZE);
 	r->sign = a->sign; 
 }
@@ -91,10 +79,6 @@ bin_to_int(char *num)
 int 
 big_gth(big_t *a, big_t *b)
 {
-	if (a->value == NULL || b->value == NULL) {
-		return 0;
-	}
-
 	if (a->sign == false && b->sign == true) {
 		return 2;
 	}
@@ -114,10 +98,6 @@ big_gth(big_t *a, big_t *b)
 int 
 big_gth_uns(big_t *a, big_t *b)
 {
-	if (a->value == NULL || b->value == NULL) {
-		return 0;
-	}
-
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	
@@ -145,29 +125,23 @@ big_gth_uns(big_t *a, big_t *b)
 	return 1;
 }
 
-static char*
-padd_str(char *str)
+static void
+padd_str(char *str, char *dest, int padd)
 {
-	char *mask = malloc(sizeof(char) * 512);
 	register char *p = str + (strlen(str) - 1);
-	register char *m = mask + 511;
-	memset(mask, '0', sizeof(char) * 512);
+	register char *m = dest + padd - 1;
+	memset(dest, '0', sizeof(char) * padd);
 
 	while (*p) {
 		*m-- = *p--;
 	}
-
-	return mask;
 }
 
 void
 bin_to_big(char *src, big_t *r)
 {
-	if (src == NULL || r == NULL) {
-		return;
-	}
-
-	char *num = padd_str(src);
+	char num[512];
+	padd_str(src, num, 512);
 	char digit[DIGIT_BITS];
 	register char *nump = num;
 	register dig_t *rp = r->value + (MAX_DIGITS - 1);
@@ -183,17 +157,33 @@ bin_to_big(char *src, big_t *r)
 
 		*rp = bin_to_int(digit);
 	}
+}
 
-	free(num);
+void
+hex_to_big(char *src, big_t *r)
+{
+	char num[128];
+	padd_str(src, num, 128);
+	char digit[9];
+	register char *nump = num;
+	register dig_t *rp = r->value + (MAX_DIGITS - 1);
+	register char *digp;
+	big_null(r);
+
+	for (; rp >= &r->value[0]; rp--) {
+		digp = digit;
+
+		while (digp <= &digit[7]) {
+			*(digp++) = *(nump++);
+		}
+		*(digp) = '\0';
+		*rp = strtoul(digit, NULL, 16);
+	}
 }
 
 int
 big_legendre_symbol(big_t *a, big_t *b, big_t *A, big_t *R, big_t *beta, big_t *Rm, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus)
 {
-	if (a == NULL || b == NULL || A == NULL || R == NULL || beta == NULL || Rm == NULL || u == NULL || bk_minus == NULL || bk_plus == NULL || bk_plus_minus == NULL) {
-		return -2;
-	}
-
 	big_t t;
 	big_t r;
 	big_rst(b, &t);
@@ -222,10 +212,6 @@ big_mont(big_t *a, big_t *b, big_t *Rm, big_t *beta, big_t *r)
 void
 big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_t *Rm, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus, big_t *r)
 {
-	if (a == NULL || b == NULL || p == NULL || A == NULL || R == NULL || beta == NULL || Rm == NULL || u == NULL || bk_minus == NULL || bk_plus == NULL || bk_plus_minus == NULL) {
-		return;
-	}
-
 	big_t xn;
 	big_t t;
 	char *bin_b = big_to_bin(b);
@@ -253,10 +239,6 @@ big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_
 void
 big_sum(big_t *a, big_t *b, big_t *r)
 {
-	if (a == NULL || b == NULL || r == NULL) {
-		return;
-	}
-
 	if (a->sign != b->sign) {
 		big_t a1;
 		big_t b1;
@@ -270,36 +252,33 @@ big_sum(big_t *a, big_t *b, big_t *r)
 
 	big_null(r);
 	register dig_t w, carry = 0;
-	register dig_t *mp, *lp, *rp = r->value;
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
+	register dig_t *gp, *lp, *rp = r->value;
+	int n = big_get_lnt(a), m = big_get_lnt(b);
 
 	if (n >= m) {
 		lp = b->value;
-		mp = a->value;
+		gp = a->value;
 	}
 	else {
 		lp = a->value;
-		mp = b->value;
-		int t = n;
-		n = m;
-		m = t;
+		gp = b->value;
+		int t = n; n = m; m = t;
 	}
 
-	for (; rp <= &r->value[m]; lp++, mp++, rp++) {
-		w = carry + (*mp) + (*lp);
+	for (; rp <= &r->value[m]; lp++, gp++, rp++) {
+		w = carry + (*gp) + (*lp);
 		(*rp) = w & BASE_M;
 		carry = w >> DIGIT_BITS;
 	}
 
 	while (carry) {
-		w = carry + (*mp++);
+		w = carry + (*gp++);
 		(*rp++) = w & BASE_M;
 		carry = w >> DIGIT_BITS;
 	}
 
 	while (rp <= &r->value[n]) {
-		(*rp++) = (*mp++);
+		(*rp++) = (*gp++);
 	}
 
 	r->sign = a->sign ? true : false;
@@ -308,10 +287,6 @@ big_sum(big_t *a, big_t *b, big_t *r)
 void
 big_sub(big_t *a, big_t *b, big_t *r)
 {
-	if (a == NULL || b == NULL || r == NULL) {
-		return;
-	}
-
 	if (a->sign != b->sign) {
 		big_t a1;
 		big_t b1;
@@ -389,19 +364,15 @@ big_sub(big_t *a, big_t *b, big_t *r)
 void
 big_mul(big_t *a, big_t *b, big_t *r)
 {
-	if (a == NULL || b == NULL || r == NULL) {
-		return;
-	}
-
 	big_null(r);
 	register dig_t uv, u;
 	register dig_t *ap = a->value, *bp, *rp = r->value, *trp;
 	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
+	int m = big_get_lnt(b) + 1;
 
 	for (; ap <= &a->value[n]; ap++, rp++) {
 		u = 0;
-		for (trp = rp, bp = b->value; bp <= &b->value[m + 1]; bp++, trp++) {
+		for (trp = rp, bp = b->value; bp <= &b->value[m]; bp++, trp++) {
 			uv = (*trp) + ((*ap) * (*bp)) + u;
 			u = uv >> DIGIT_BITS;
 			(*trp) = uv & BASE_M;
@@ -414,10 +385,6 @@ big_mul(big_t *a, big_t *b, big_t *r)
 void
 big_sqr(big_t *a, big_t *r)
 {
-	if (a == NULL || r == NULL) {
-		return;
-	}
-
 	big_null(r);
 	register twodig_t uv, u;
 	register dig_t *tmpt, *ap = a->value, *rp, *tmpap, tmpx;
@@ -453,10 +420,6 @@ big_sqr(big_t *a, big_t *r)
 bool 
 big_eql(big_t *a, big_t *b)
 {
-	if (a == NULL || b == NULL) {
-		return false;
-	}
-
 	if (a->sign != b->sign) {
 		return false;
 	}
@@ -479,15 +442,11 @@ big_eql(big_t *a, big_t *b)
 void
 big_and(big_t *a, big_t *b, big_t *r)
 {
-	if (a == NULL || b == NULL || r == NULL) {
-		return;
-	}
-
-	big_null(r);
 	int n = big_get_lnt(a);
 	int m = big_get_lnt(b);
 	int g = n >= m ? m : n;
 	register dig_t *ap = a->value, *bp = b->value, *rp = r->value;
+	big_null(r);
 
 	if (a->sign == false) {
 		for (; rp <= &r->value[g]; rp++, ap++, bp++) {
@@ -518,12 +477,8 @@ big_and(big_t *a, big_t *b, big_t *r)
 void
 big_rst_word(big_t *a, int s, big_t *r)
 {
-	if (a == NULL || r == NULL || s == 0) {
-		return;
-	}
-	
 	register dig_t *ap = a->value + s, *rp = r->value;
-	int n = big_get_lnt(a);
+	int n = big_get_lnt(a) - s + 1;
 	big_null(r);
 	
 	for (; rp <= &r->value[n]; rp++, ap++) {
@@ -536,10 +491,6 @@ big_rst_word(big_t *a, int s, big_t *r)
 void
 big_rst(big_t *a, big_t *r)
 {
-	if (a == NULL || r == NULL) {
-		return;
-	}
-
 	int n = big_get_lnt(a);
 	register dig_t *ap = a->value + n, *rp = r->value + n;
 	register int lsb = 0;
@@ -556,15 +507,11 @@ big_rst(big_t *a, big_t *r)
 void
 big_lst_word(big_t *a, int s, big_t *r)
 {
-	if (a == NULL || r == NULL || s == 0) {
-		return;
-	}
-
-	int n = big_get_lnt(a);
 	register dig_t *ap = a->value, *rp = r->value + s;
+	int n = big_get_lnt(a) + s;
 	big_null(r);
 	
-	for (; rp <= &r->value[n + s]; rp++, ap++) {
+	for (; rp <= &r->value[n]; rp++, ap++) {
 		*rp = *ap;
 	}
 
@@ -574,16 +521,12 @@ big_lst_word(big_t *a, int s, big_t *r)
 void
 big_lst(big_t *a, big_t *r)
 {
-	if (a == NULL || r == NULL) {
-		return;
-	}
-
-	int n = big_get_lnt(a);
+	int n = big_get_lnt(a) + 1;
 	register dig_t t, carry = 0;
 	register dig_t *ap = a->value, *rp = r->value;
 	big_null(r);
 
-	for (; rp <= &r->value[n + 1]; rp++, ap++) {
+	for (; rp <= &r->value[n]; rp++, ap++) {
 		t = (*ap << 1) + carry;
 		*rp = t & BASE_M;
 		carry = t >> DIGIT_BITS;
@@ -595,10 +538,6 @@ big_lst(big_t *a, big_t *r)
 void
 big_to_hex(big_t *a)
 {
-	if (a == NULL) {
-		return;
-	}
-
 	int n = big_get_lnt(a);
 	register dig_t *ap = a->value + n;
 
@@ -612,10 +551,6 @@ big_to_hex(big_t *a)
 void
 big_mod(big_t *a, big_t *p, big_t *r)
 {
-	if (a == NULL || r == NULL) {
-		return;
-	}
-	
 	big_t t;
 	big_null(r);
 	big_cpy(a, r);
@@ -638,10 +573,6 @@ big_mod(big_t *a, big_t *p, big_t *r)
 void
 big_barrett_mod(big_t *a, big_t *p, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus, big_t *r)
 {
-	if (a == NULL || r == NULL){
-		return;
-	}
-
 	big_t t1, t2, t3;
 	big_null(r);
 	
@@ -669,24 +600,12 @@ big_barrett_mod(big_t *a, big_t *p, big_t *u, big_t *bk_minus, big_t *bk_plus, b
 bool
 big_odd(big_t *a)
 {
-	if (a == NULL) {
-		return false;
-	}
-
 	return (*(a->value) & 1);
 }
 
 void
 big_mod_inv(big_t *a, big_t *b, big_t *r)
 {
-	if (a == NULL || b == NULL || r == NULL) {
-		return;
-	}
-
-	if (big_gth_uns(a, b)) {
-		return;
-	}
-
 	big_t u, v, x1, x2, one, t; 
 	big_null(r);
 	big_null(&t);
