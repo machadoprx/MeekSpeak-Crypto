@@ -74,7 +74,7 @@ print("%0f\n" % (end - start))
 
 print("MODINV")
 start = time()
-r = mod_inv(a, p)
+r = b_mod_inv(a, p)
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))

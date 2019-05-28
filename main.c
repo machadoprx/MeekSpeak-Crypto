@@ -178,8 +178,8 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	for (int i = 0; i < MAX_DIGITS; i++)
-		printf("%d %lX\n", i, bk_plus->value[i]);
+	//for (int i = 0; i < MAX_DIGITS; i++)
+	//	printf("%d %lX\n", i, bk_plus->value[i]);
 
 	big_free(a);
 	big_free(b);

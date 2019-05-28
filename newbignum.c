@@ -79,20 +79,12 @@ bin_to_int(char *num)
 int 
 big_gth(big_t *a, big_t *b)
 {
-	if (a->sign == false && b->sign == true) {
-		return 2;
-	}
+	if (a->sign == b->sign) {
 
-	else if (a->sign == b->sign) {
-		if (a->sign == false) {
-			return big_gth_uns(a, b);
-		}
+		return a->sign ? big_gth_uns(b, a) : big_gth_uns(a, b);
 
-		else{
-			return big_gth_uns(b, a);
-		}
 	}
-	return 0;
+	return a->sign ? 0 : 2;
 }
 
 int 
@@ -102,27 +94,22 @@ big_gth_uns(big_t *a, big_t *b)
 	int m = big_get_lnt(b);
 	
 	if (n != m) {
-		if (n > m) {
-			return 2;
-		}
-		return 0;
+		return n > m ? 2 : 0;
 	}
 
 	register dig_t *ap = a->value + n;
     register dig_t *bp = b->value + n;
-	
-	for (;ap >= &a->value[0]; ap--, bp--) {
+	register int i = n;
 
-		if (*ap < *bp) {
-			return 0;
-		}
-
-		else if (*ap > *bp) {
-			return 2;
-		}
+	while (i-- >= 0 && *ap == *bp) {
+		ap--; bp--;
 	}
 
-	return 1;
+	if (i == 0 && *ap == *bp) {
+		return 1;
+	}
+
+	return (*ap < *bp) ? 0 : 2;
 }
 
 static void
@@ -177,7 +164,8 @@ hex_to_big(char *src, big_t *r)
 			*(digp++) = *(nump++);
 		}
 		*(digp) = '\0';
-		*rp = strtoul(digit, NULL, 16);
+
+		*rp = strtoull(digit, NULL, 16);
 	}
 }
 
@@ -224,7 +212,7 @@ big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_
 	}
 
 	while (*bit) {
-		big_sqr(A, &t);
+		big_mul(A, A, &t);
 		big_mont(&t, p, Rm, beta, A);
 		if (*bit++ == '1') {
 			big_mul(A, &xn, &t);
@@ -327,31 +315,26 @@ big_sub(big_t *a, big_t *b, big_t *r)
 	for (; rp <= &r->value[m]; gp++, lp++, rp++) {
 
 		w = (*gp) - (*lp) - borrow;
-
 		if (w < 0) {
 			w += BASE;
 			borrow = 1;
 		}
-		
 		else {
 			borrow = 0;
 		}
-
 		(*rp) = w;
 	}
 
 	while (borrow) {
-		w = (*gp++) - borrow;
 
+		w = (*gp++) - borrow;
 		if (w < 0) {
 			w += BASE;
 			borrow = 1;
 		}
-		
 		else {
 			borrow = 0;
 		}
-
 		(*rp++) = w;
 	}
 

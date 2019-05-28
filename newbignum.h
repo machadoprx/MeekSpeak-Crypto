@@ -9,8 +9,8 @@
 #define dig_t			uint64_t
 #define MAX_DIGITS		16
 #define WORDS_SIZE		32 * sizeof(dig_t)
-#define BASE 			0x100000000u
-#define BASE_M			0xFFFFFFFFu
+#define BASE 			0x100000000ull
+#define BASE_M			0xFFFFFFFFull
 #define DIGIT_BITS		32
 #define LESS 			0
 #define EQUAL 			1
