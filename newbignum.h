@@ -8,7 +8,7 @@
 #define twodig_t 		__uint128_t
 #define dig_t			uint64_t
 #define MAX_DIGITS		16
-#define WORDS_SIZE		32 * sizeof(dig_t)
+#define WORDS_SIZE		22 * sizeof(dig_t)
 #define BASE 			0x100000000ull
 #define BASE_M			0xFFFFFFFFull
 #define DIGIT_BITS		32
@@ -18,7 +18,7 @@
 
 // Big Integer structure
 typedef struct _big_t{
-	dig_t	value[32];
+	dig_t	value[22];
 	bool 	sign;
 }big_t;
 
@@ -49,7 +49,6 @@ int 	big_gth_uns			(big_t *, big_t *);
 int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);
-bool 	big_odd				(big_t *);
 char* 	big_to_bin			(big_t *);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
