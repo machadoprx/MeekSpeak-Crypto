@@ -30,13 +30,15 @@ void 	big_cpy				(big_t *, big_t *);
 
 // Logic and arithmetic operations functions
 void 	big_mul				(big_t *, big_t *, big_t *);
+void	big_mul_nasty		(big_t *, big_t *, big_t *);
 void	big_sqr				(big_t *, big_t *);
 void 	big_sub				(big_t *, big_t *, big_t *);
 void 	big_sum				(big_t *, big_t *, big_t *);
-void	big_mont_pow		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
+void	big_mont_pow		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 void 	big_mod_inv			(big_t *, big_t *, big_t *);
 void	big_barrett_mod		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 void 	big_mod				(big_t *, big_t *, big_t *);
+void	big_mod2			(big_t *, big_t *, big_t *, big_t *);
 void	big_lst				(big_t *, big_t *);
 void 	big_rst				(big_t *, big_t *);
 void 	big_rst_word		(big_t *, int, big_t *);
@@ -46,7 +48,7 @@ void 	big_and				(big_t *, big_t *, big_t *);
 // Utility functions (Compare, primes...)
 int 	big_gth				(big_t *, big_t *);
 int 	big_gth_uns			(big_t *, big_t *);
-int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
+int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);
 char* 	big_to_bin			(big_t *);

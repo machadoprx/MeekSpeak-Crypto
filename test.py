@@ -127,5 +127,7 @@ r = pow(a, (p - 1) // 2, p)
 end = time()
 print(r)
 print("%0f\n" % (end - start))
-
-print(hex(0b100110))
+base = 2 ** 32
+# p == 
+print(hex((2 ** 255) - 1))
+print(2 ** 32)
