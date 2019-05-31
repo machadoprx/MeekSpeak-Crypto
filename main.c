@@ -1,9 +1,9 @@
 #include "newbignum.h"
 #include <time.h>
 
-static const uint64_t P25519[] 					= {0xFFFFFFED, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF};
-static const uint64_t BK_MINUS_25519[] 			= {0, 0, 0, 0, 0, 0, 0, 1};
-static const uint64_t BK_PLUS_25519[] 			= {0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+static char P25519[] 				= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
+static char BK_MINUS_25519[] 		= "100000000000000000000000000000000000000000000000000000000";
+static char BK_PLUS_25519[] 		= "1000000000000000000000000000000000000000000000000000000000000000000000000";
 static char BK_PLUS_25519_MINUS[] 	= "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 static char U_25519[] 				= "20000000000000000000000000000000000000000000000000000000000000000";
 static char BETA_25519[] 			= "d0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5";
@@ -38,10 +38,9 @@ main(int argc, char const *argv[])
 	hex_to_big(A_25519, A);
 	hex_to_big(R_MINUS_25519, Rm);
 	hex_to_big(BK_PLUS_25519_MINUS, bk_plus_minus);
-	//hex_to_big(BK_PLUS_25519, bk_plus);
-	memcpy(p->value, P25519, sizeof(uint64_t) * 8);
-	memcpy(bk_minus->value, BK_MINUS_25519, sizeof(uint64_t) * 8);
-	memcpy(bk_plus->value, BK_PLUS_25519, sizeof(uint64_t) * 10);
+	hex_to_big(BK_PLUS_25519, bk_plus);
+	hex_to_big(BK_MINUS_25519, bk_minus);
+	hex_to_big(P25519, p);
 	hex_to_big(U_25519, u);
 	hex_to_big("35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9", a);
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", b);

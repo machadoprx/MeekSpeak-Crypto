@@ -554,33 +554,47 @@ big_mod(big_t *a, big_t *p, big_t *r)
 void
 big_mul(big_t *a, big_t *b, big_t *r)
 {
-	dig_t uv = 0, u = 0, *rp = r->value;
 	big_null(r);
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
+	register int n = big_get_lnt(a);
+	register int m = big_get_lnt(b);
+	register int g = n + m + 1, i, j;
+	register dig_t uv = 0, u = 0, *rp = r->value, *ap, *bp, *tbp;
+	
 	if (n < m) {
 		int t = n;
 		n = m; m = t;
 	}
 
-	for (int i = 0; i <= n + m + 1; i++, rp++) {
-		if (i <= n) {
-			for (int j = 0; j <= i; j++) {
-				uv = uv + (a->value[j] * b->value[i - j]);
-				u = (uv >> DIGIT_BITS) + u;
-				uv = uv & BASE_M;
-			}
-		}
-		else {
-			for (int j = i - n; j <= n; j++) {
-				uv = uv + (a->value[j] * b->value[i - j]);
-				u = (uv >> DIGIT_BITS) + u;
-				uv = uv & BASE_M;
-			}
+	bp = b->value;
+	for (i = 0; i <= n; i++, rp++) {
+		
+		ap = a->value;
+		bp = b->value + i;
+
+		for (j = 0; j <= i; ap++ ,bp--, j++) {
+			uv = uv + ((*ap) * (*bp));
+			u = (uv >> DIGIT_BITS) + u;
+			uv = uv & BASE_M;
 		}
 		(*rp) = uv & BASE_M;
 		uv = u & BASE_M;
-		u >>= DIGIT_BITS;
+		u = u >> DIGIT_BITS;
+	}
+
+	bp = b->value + n;
+
+	for (; i <= g; i++, rp++) {
+		
+		ap = a->value + (i - n);
+
+		for (tbp = bp, j = i - n; j <= n; ap++ ,tbp--, j++) {
+			uv = uv + ((*ap) * (*tbp));
+			u = (uv >> DIGIT_BITS) + u;
+			uv = uv & BASE_M;
+		}
+		(*rp) = uv & BASE_M;
+		uv = u & BASE_M;
+		u = u >> DIGIT_BITS;
 	}
 
 	r->sign = a->sign ^ b->sign;
@@ -595,9 +609,9 @@ big_mod2(big_t *a, big_t *p, big_t *pn, big_t *r)
 	big_cpy(a, r);
 	tmpk.value[0] = 19;
 
-	while (big_gth_uns(r, p) >= EQUAL) {
+	while (big_gth_uns(r, p) > LESS) {
 
-		lsb = (*r8) & 0x80000000ul;
+		lsb = (*r8) & 0x80000000ull;
 		big_rst_word(r, 8, &t1);
 		big_lst(&t1, &tmpq);
 
@@ -609,7 +623,7 @@ big_mod2(big_t *a, big_t *p, big_t *pn, big_t *r)
 		big_mul(&tmpq, &tmpk, &t2);
 		big_sum(&t1, &t2, r);
 		
-		if (big_gth_uns(r, p) >= EQUAL) {
+		if (big_gth_uns(r, p) > LESS) {
 			
 			big_sub(r, p, &t3);
 			big_cpy(&t3, r);
@@ -649,7 +663,6 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 {
 	big_t u, v, x1, x2, one, t; 
 	big_null(r);
-	big_null(&t);
 	big_cpy(a, &u);
 	big_cpy(b, &v);
 	big_null(&x1);
