@@ -8,7 +8,7 @@
 #define twodig_t 		__uint128_t
 #define dig_t			uint64_t
 #define MAX_DIGITS		16
-#define WORDS_SIZE		22 * sizeof(dig_t)
+#define WORDS_SIZE		16 * sizeof(dig_t)
 #define BASE 			0x100000000ull
 #define BASE_M			0xFFFFFFFFull
 #define DIGIT_BITS		32
@@ -18,7 +18,7 @@
 
 // Big Integer structure
 typedef struct _big_t{
-	dig_t	value[22];
+	dig_t	value[MAX_DIGITS];
 	bool 	sign;
 }big_t;
 
