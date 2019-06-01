@@ -9,6 +9,7 @@ static char U_25519[] 				= "200000000000000000000000000000000000000000000000000
 static char BETA_25519[] 			= "d0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5";
 static char R_25519[] 				= "10000000000000000000000000000000000000000000000000000000000000000";
 static char R_MINUS_25519[] 		= "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+static char PN_25519[] 				= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 static char A_25519[] 				= "26";
 
 int
@@ -30,6 +31,7 @@ main(int argc, char const *argv[])
 	big_t *R = big_new();
 	big_t *beta = big_new();
 	big_t *Rm = big_new();
+	big_t *pn = big_new();
 
 	hex_to_big(U_25519, u);
 	hex_to_big(BETA_25519, beta);
@@ -46,8 +48,7 @@ main(int argc, char const *argv[])
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", b);
 	hex_to_big("973a9", c);
 	hex_to_big("eb3a792f770c0a46628af8bbe1209ba88c1818a0c22a4fb2405d292a1c064aa2654f33df", d);
-	big_t pn;
-	hex_to_big("7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff", &pn);
+	hex_to_big(PN_25519, pn);
 
 	printf("Mult\n");
 	start = clock();
@@ -81,7 +82,7 @@ main(int argc, char const *argv[])
 
 	printf("Power Mod\n");
 	start = clock();
-	big_mont_pow(a, c, p, A, R, beta, Rm, &pn, r);
+	big_mont_pow(a, c, p, A, R, beta, Rm, pn, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -101,7 +102,7 @@ main(int argc, char const *argv[])
 
 	printf("Mod\n");
 	start = clock();
-	big_mod2(d, p, &pn, r);
+	big_fastmod_25519(d, p, pn, r);
 	//big_barrett_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
@@ -163,7 +164,7 @@ main(int argc, char const *argv[])
 	hex_to_big(A_25519, A);
 	printf("legendre\n");
 	start = clock();
-	int x = big_legendre_symbol(a, p, A, R, beta, Rm, &pn);
+	int x = big_legendre_symbol(a, p, A, R, beta, Rm, pn);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	printf("%d\n", x);
@@ -180,9 +181,6 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	//for (int i = 0; i < MAX_DIGITS; i++)
-	//	printf("%d %lX\n", i, p->value[i]);
-
 	big_free(a);
 	big_free(b);
 	big_free(c);
@@ -197,5 +195,6 @@ main(int argc, char const *argv[])
 	big_free(R);
 	big_free(Rm);
 	big_free(beta);
+	big_free(pn);
 	return 0;
 }

@@ -38,7 +38,7 @@ void	big_mont_pow		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t 
 void 	big_mod_inv			(big_t *, big_t *, big_t *);
 void	big_barrett_mod		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 void 	big_mod				(big_t *, big_t *, big_t *);
-void	big_mod2			(big_t *, big_t *, big_t *, big_t *);
+void	big_fastmod_25519	(big_t *, big_t *, big_t *, big_t *);
 void	big_lst				(big_t *, big_t *);
 void 	big_rst				(big_t *, big_t *);
 void 	big_rst_word		(big_t *, int, big_t *);
