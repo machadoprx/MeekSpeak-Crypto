@@ -1,2 +1,2 @@
 all:
-	gcc newbignum.c main.c -march=native -mtune=native -Ofast -Wall
+	gcc newbignum.c main.c -march=native -mtune=native -Ofast -Wall -pedantic

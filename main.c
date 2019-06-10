@@ -46,7 +46,8 @@ main(int argc, char const *argv[])
 	hex_to_big(U_25519, u);
 	hex_to_big("35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9", a);
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", b);
-	hex_to_big("973a9", c);
+	//hex_to_big("973a9", c);
+	hex_to_big("aefedc3ab21af7", c);
 	hex_to_big("eb3a792f770c0a46628af8bbe1209ba88c1818a0c22a4fb2405d292a1c064aa2654f33df", d);
 	hex_to_big(PN_25519, pn);
 
@@ -160,7 +161,7 @@ main(int argc, char const *argv[])
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
-	
+
 	hex_to_big(A_25519, A);
 	printf("legendre\n");
 	start = clock();
