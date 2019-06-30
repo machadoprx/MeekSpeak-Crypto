@@ -268,7 +268,7 @@ big_sum(big_t *a, big_t *b, big_t *r)
 		carry = w >> BIG_DIGIT_BITS;
 	}
 
-	while (rp <= stop1 && carry) {
+	while (carry) { // may overflow
 		w = carry + (*gp++);
 		(*rp++) = w & BIG_BASE_M;
 		carry = w >> BIG_DIGIT_BITS;
@@ -330,7 +330,7 @@ big_sub(big_t *a, big_t *b, big_t *r)
 		(*rp) = (*rp) & BIG_BASE_M; // assign modulo to result
 	}
 
-	while (rp <= stop1 && borrow) { // may overflow
+	while (borrow) { // may overflow
 
 		(*rp) = (*gp) - borrow;	// warning: mix int with uint
 		borrow = (*rp) >> shift;
@@ -577,6 +577,7 @@ big_mul(big_t *a, big_t *b, big_t *r)
 			u = (uv >> BIG_DIGIT_BITS) + u;
 			uv = uv & BIG_BASE_M;
 		}
+
 		(*rp) = uv & BIG_BASE_M;
 		uv = u & BIG_BASE_M;
 		u = u >> BIG_DIGIT_BITS;
@@ -593,6 +594,7 @@ big_mul(big_t *a, big_t *b, big_t *r)
 			u = (uv >> BIG_DIGIT_BITS) + u;
 			uv = uv & BIG_BASE_M;
 		}
+		
 		(*rp) = uv & BIG_BASE_M;
 		uv = u & BIG_BASE_M;
 		u = u >> BIG_DIGIT_BITS;
@@ -608,6 +610,7 @@ big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 	dig_t lsb, *r8 = r->value + 8;
 	big_null(&tmpk);
 	big_cpy(a, r);
+	r->sign = false;
 	tmpk.value[0] = 19ull;
 
 	while (big_gth_uns(r, p) > BIG_LESS) {
@@ -629,6 +632,11 @@ big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 			big_sub(r, p, &t3);
 			big_cpy(&t3, r);
 		}
+	}
+
+	if (a->sign == true) {
+		big_cpy(r, &t1);
+		big_sub(p, &t1, r);
 	}
 }
 

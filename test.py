@@ -128,6 +128,9 @@ end = time()
 print(r)
 print("%0f\n" % (end - start))
 
+print(hex((-1 * a) % p))
+
+
 '''print(hex(2 ** (288)))
 print(hex((2 ** (288) - 1)))
 print(hex(pow(2, 288, p)))
