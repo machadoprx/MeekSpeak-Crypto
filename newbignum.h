@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#ifndef NEWBIGNUM_H
+#define NEWBIGNUM_H
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
@@ -55,3 +57,5 @@ void 	big_to_hex			(big_t *);
 dig_t*	big_to_bin			(big_t *, int *);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
+
+#endif

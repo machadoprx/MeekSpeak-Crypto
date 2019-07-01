@@ -1,4 +1,5 @@
 #include "newbignum.h"
+#include "simple25519.h"
 #include <time.h>
 
 static char P25519[] 				= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
@@ -181,6 +182,12 @@ main(int argc, char const *argv[])
 	big_null(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
+
+	ec_t *curvetest = ec_init_c25519();
+	ecp_t *PR = ecp_new();
+
+	ecp_double(curvetest, curvetest->G, p, pn, PR);
+	big_to_hex(&PR->x);
 
 	big_free(a);
 	big_free(b);

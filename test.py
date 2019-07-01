@@ -128,7 +128,9 @@ end = time()
 print(r)
 print("%0f\n" % (end - start))
 
-print(hex((-1 * a) % p))
+
+x = (1449 * 450) % 1449
+print(x)
 
 
 '''print(hex(2 ** (288)))
