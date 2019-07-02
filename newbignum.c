@@ -605,30 +605,26 @@ big_mul(big_t *a, big_t *b, big_t *r)
 void
 big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 {
-	big_t t1, t2, t3, tmpq, tmpk, one;
+	big_t t1, t2, t3, tmpq, tmpk;
 	dig_t msb, *r7 = r->value + 7;
-	big_null(&one);
 	big_null(&tmpk);
-	one.value[0] = 1ull;
 	tmpk.value[0] = 19ull;
 	big_cpy(a, r);
 	r->sign = false;
 
-	while (big_gth_uns(r, p) >= BIG_EQUAL) {
+	while (big_gth_uns(r, p) > BIG_LESS) {
 
 		msb = (*r7) & 0x80000000ull; // b
 		big_rst_word(r, 8, &t1);
 		big_lst(&t1, &tmpq);
 
-		if (msb) {
-			(*tmpq.value) |= 1;
-		}
+		(*tmpq.value) += (msb >> 31);
 
 		big_and(r, pn, &t1);
 		big_mul(&tmpq, &tmpk, &t2);
 		big_sum(&t1, &t2, r);
 		
-		if (big_gth_uns(r, p) >= BIG_EQUAL) {
+		if (big_gth_uns(r, p) > BIG_LESS) {
 			
 			big_sub(r, p, &t3);
 			big_cpy(&t3, r);
@@ -639,34 +635,6 @@ big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 		big_cpy(r, &t1);
 		big_sub(p, &t1, r);
 	}
-
-}
-
-void
-big_barrett_mod(big_t *a, big_t *p, big_t *u, big_t *bk_minus, big_t *bk_plus, big_t *bk_plus_minus, big_t *r)
-{
-	big_t t1, t2, t3;
-	big_null(r);
-	
-	big_rst_word(a, 7, &t1);
-	big_mul(u, &t1, &t2);
-	big_rst_word(&t2, 9, &t1);
-
-	big_and(a, bk_plus_minus, &t2);
-	big_mul(p, &t1, &t3); 
-	big_and(&t3, bk_plus_minus, &t1);
-	big_sub(&t2, &t1, r);
-
-	if (r->sign == true) {
-		big_sum(r, bk_plus, &t1);
-		big_cpy(&t1, r);
-	}
-
-	while (big_gth_uns(r, p) >= BIG_EQUAL) {
-		big_sub(r, p, &t1);
-		big_cpy(&t1, r);
-	}
-
 }
 
 void
