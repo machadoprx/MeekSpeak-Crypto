@@ -3,7 +3,6 @@
 #define GX_25519 9
 #define GZ_25519 1
 #define GA_25519 486662
-static char GY_25519[] = "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9";
 
 typedef struct _ecp_t{
     big_t x, y;

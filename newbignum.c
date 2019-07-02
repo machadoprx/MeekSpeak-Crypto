@@ -152,8 +152,7 @@ bin_to_big(char *src, big_t *r)
 			*(digp++) = *(nump++);
 		}
 
-		*rp = strtoull(digit, NULL, 2);
-		//*rp = bin_to_int(digit);
+		*rp = bin_to_int(digit);
 	}
 }
 
@@ -606,28 +605,30 @@ big_mul(big_t *a, big_t *b, big_t *r)
 void
 big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 {
-	big_t t1, t2, t3, tmpq, tmpk;
-	dig_t lsb, *r8 = r->value + 8;
+	big_t t1, t2, t3, tmpq, tmpk, one;
+	dig_t msb, *r7 = r->value + 7;
+	big_null(&one);
 	big_null(&tmpk);
+	one.value[0] = 1ull;
+	tmpk.value[0] = 19ull;
 	big_cpy(a, r);
 	r->sign = false;
-	tmpk.value[0] = 19ull;
 
-	while (big_gth_uns(r, p) > BIG_LESS) {
+	while (big_gth_uns(r, p) >= BIG_EQUAL) {
 
-		lsb = (*r8) & 0x80000000ull;
+		msb = (*r7) & 0x80000000ull; // b
 		big_rst_word(r, 8, &t1);
 		big_lst(&t1, &tmpq);
 
-		if (lsb) {
-			(*tmpq.value)++;
+		if (msb) {
+			(*tmpq.value) |= 1;
 		}
 
 		big_and(r, pn, &t1);
 		big_mul(&tmpq, &tmpk, &t2);
 		big_sum(&t1, &t2, r);
 		
-		if (big_gth_uns(r, p) > BIG_LESS) {
+		if (big_gth_uns(r, p) >= BIG_EQUAL) {
 			
 			big_sub(r, p, &t3);
 			big_cpy(&t3, r);
@@ -638,6 +639,7 @@ big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 		big_cpy(r, &t1);
 		big_sub(p, &t1, r);
 	}
+
 }
 
 void

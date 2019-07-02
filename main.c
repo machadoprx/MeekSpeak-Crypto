@@ -33,6 +33,7 @@ main(int argc, char const *argv[])
 	big_t *beta = big_new();
 	big_t *Rm = big_new();
 	big_t *pn = big_new();
+	big_t *l = big_new();
 
 	hex_to_big(U_25519, u);
 	hex_to_big(BETA_25519, beta);
@@ -47,10 +48,20 @@ main(int argc, char const *argv[])
 	hex_to_big(U_25519, u);
 	hex_to_big("35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9", a);
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", b);
-	//hex_to_big("973a9", c);
-	hex_to_big("aefedc3ab21af7", c);
-	hex_to_big("eb3a792f770c0a46628af8bbe1209ba88c1818a0c22a4fb2405d292a1c064aa2654f33df", d);
+	hex_to_big("1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534", l);
+	hex_to_big("9ac6241f", c);
+	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faa002f53134d7bb030ed3bbcebcd28b466227cc87766421df596a50c58c21d04c88ebf9ed887b58bf7112dc", d);
 	hex_to_big(PN_25519, pn);
+
+	printf("Mod\n");
+	start = clock();
+	big_fastmod_25519(d, p, pn, r);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	big_to_hex(r);
+	big_null(r);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	printf("Mult\n");
 	start = clock();
@@ -95,17 +106,6 @@ main(int argc, char const *argv[])
 	printf("Mod Inverse\n");
 	start = clock();
     big_mod_inv(a, p, r);
-	end = clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(r);
-	big_null(r);
-	printf("%lf\n", cpu_time_used);
-	printf("\n");
-
-	printf("Mod\n");
-	start = clock();
-	big_fastmod_25519(d, p, pn, r);
-	//big_barrett_mod(d, p, u, bk_minus, bk_plus, bk_plus_minus, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -185,10 +185,31 @@ main(int argc, char const *argv[])
 
 	ec_t *curvetest = ec_init_c25519();
 	ecp_t *PR = ecp_new();
+	ecp_t *PR2 = ecp_new();
 
+	printf("curve double\n");
+	start = clock();
 	ecp_double(curvetest, curvetest->G, p, pn, PR);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(&PR->x);
+	big_to_hex(&PR->y);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
+	printf("curve add\n");
+	start = clock();
+	ecp_add(curvetest, PR, curvetest->G, p, pn, PR2);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	big_to_hex(&PR2->x);
+	big_to_hex(&PR2->y);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
+
+	free(PR);
+	free(PR2);
+	free(curvetest);
 	big_free(a);
 	big_free(b);
 	big_free(c);

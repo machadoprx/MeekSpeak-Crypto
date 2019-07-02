@@ -12,6 +12,7 @@ ec_t*
 ec_init_c25519()
 {
     ec_t *curve = malloc(sizeof(ec_t));
+    char GY_25519[] = "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9";
     char *Gy = GY_25519;
     curve->G = ecp_new();
     curve->G->x.value[0] = GX_25519;
@@ -33,63 +34,48 @@ ecp_null(ecp_t *P)
 void
 ecp_add(ec_t *curve, ecp_t *P, ecp_t *Q, big_t *p, big_t *pn, ecp_t *R)
 {
-    big_t t1, t2, t3, t4, commonx, commony, commonx2, commony2, commonA;
+    big_t t1, t2, t3, t4, common;
 
-    big_sub(&Q->y, &P->y, &t4);
+    big_sub(&P->y, &Q->y, &t4);
     big_fastmod_25519(&t4, p, pn, &t3);
-    big_cpy(&t3, &commony);
 
-    big_mul(&t3, &t3, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2); // t2 = ((y2 - y1)^2) % p
-    big_cpy(&t2, &commony2);
-
-    big_sub(&Q->x, &P->x, &t4);
+    big_sub(&P->x, &Q->x, &t4);
     big_fastmod_25519(&t4, p, pn, &t1);
-    big_cpy(&t1, &commonx);
 
-    big_mul(&t1, &t1, &t3);
-    big_fastmod_25519(&t3, p, pn, &t4); // t4 = ((x2 - x1)^2) % p
-    big_cpy(&t4, &commonx2);
+    big_mod_inv(&t1, p, &t4);
+    big_mul(&t3, &t4, &t2);
+    big_fastmod_25519(&t2, p, pn, &t1);
+    big_cpy(&t1, &common);
 
-    big_mod_inv(&t4, p, &t1);
-    big_mul(&t1, &t2, &t3);
-    big_fastmod_25519(&t3, p, pn, &t4);
+    big_mul(&t1, &t1, &t2);
+    big_fastmod_25519(&t2, p, pn, &t1);
 
-    big_sum(&curve->A, &P->x, &t1);
-    big_sum(&t1, &Q->x, &t2);
-    big_cpy(&t2, &commonA);
+    big_sub(&t1, &curve->A, &t2);
+    big_fastmod_25519(&t2, p, pn, &t1);
+    
+    big_sub(&t1, &P->x, &t2);
+    big_fastmod_25519(&t2, p, pn, &t1);
 
-    big_sub(&t4, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &R->x);
+    big_sub(&t1, &Q->x, &t2);
+    big_fastmod_25519(&t2, p, pn, &R->x);
+
     // y3
-    big_sum(&P->x, &commonA, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_mul(&t2, &commony, &t1);
+    big_sub(&P->x, &R->x, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
 
-    big_mod_inv(&commonx, p, &t1);
-    big_mul(&t1, &t2, &t3);
-    big_fastmod_25519(&t3, p, pn, &t1); // first step
-    
-    big_mul(&commony2, &commony, &t2);
-    big_fastmod_25519(&t2, p, pn, &t3); // 1.5
+    big_mul(&t2, &common, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
 
-    big_mul(&commonx2, &commonx, &t2);
-    big_fastmod_25519(&t2, p, pn, &t4);
-    big_mod_inv(&t4, p, &t2);
-    
-    big_mul(&t2, &t3, &t4);
-    big_fastmod_25519(&t4, p, pn, &t2); // second
-    big_sum(&t2, &P->y, &t3);
-
-    big_sub(&t1, &t3, &t2);
-    big_fastmod_25519(&t2, p, pn, &R->y);
+    big_sub(&t2, &P->y, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->y);
 }
 
 void
 ecp_double(ec_t *curve, ecp_t *P, big_t *p, big_t *pn, ecp_t *R)
 {
-    big_t t1, t2, t3, t4, l, lsqr, commonA;
+    big_t t1, t2, t3, t4, l, lsqr, three;
+    big_null(&three);
+    three.value[0] = 3;
 
     big_mul(&P->x, &P->x, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
@@ -127,17 +113,23 @@ ecp_double(ec_t *curve, ecp_t *P, big_t *p, big_t *pn, ecp_t *R)
     big_sub(&t2, &P->x, &t1);
     big_fastmod_25519(&t1, p, pn, &R->x); // x
 
-    big_sum(&P->x, &commonA, &t1);
+    big_sum(&P->x, &P->x, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
+    big_sum(&t2, &P->x, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+    big_sum(&t2, &curve->A, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+    big_mul(&l, &t2, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2); // keep t2
 
-    big_mul(&t2, &l, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2); // milestone t2
-
-    big_mul(&lsqr, &l, &t1);
+    big_mul(&l, &l, &t1);
     big_fastmod_25519(&t1, p, pn, &t3);
+    big_mul(&t3, &l, &t1);
+    big_fastmod_25519(&t1, p, pn, &t3); // aqui
 
-    big_sum(&t3, &P->y, &t1);
-    big_sub(&t2, &t1, &t3);
-    big_fastmod_25519(&t3, p, pn, &R->y);
+    big_sub(&t2, &t3, &t1);
+    big_fastmod_25519(&t1, p, pn, &t3);
+    big_sub(&t3, &P->y, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->y);
 
 }

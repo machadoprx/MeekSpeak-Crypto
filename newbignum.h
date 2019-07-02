@@ -1,10 +1,10 @@
+#ifndef NEWBIGNUM_H
+#define NEWBIGNUM_H
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
-#ifndef NEWBIGNUM_H
-#define NEWBIGNUM_H
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
