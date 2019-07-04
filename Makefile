@@ -1,2 +1,4 @@
 all:
-	gcc newbignum.c main.c simple25519.c -pipe -flto -march=native -mtune=native -Ofast -pedantic
+	gcc bn/bn.c ecc/ecc_25519.c benchmark/main.c -pipe -flto -march=native -mtune=native -Ofast -pedantic -o bn_ec_test.out
+run:
+	./bn_ec_test.out

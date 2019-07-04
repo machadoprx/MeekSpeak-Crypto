@@ -1,4 +1,4 @@
-#include "simple25519.h"
+#include "ecc_25519.h"
 
 ecp_t*
 ecp_new()

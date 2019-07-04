@@ -1,4 +1,4 @@
-#include "newbignum.h"
+#include "../bn/bn.h"
 
 #define GX_25519 9
 #define GA_25519 486662

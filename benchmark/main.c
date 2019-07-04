@@ -1,5 +1,5 @@
-#include "newbignum.h"
-#include "simple25519.h"
+#include "../bn/bn.h"
+#include "../ecc/ecc_25519.h"
 #include <time.h>
 
 static char P25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
