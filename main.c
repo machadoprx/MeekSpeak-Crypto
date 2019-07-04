@@ -8,6 +8,7 @@ static char R_25519[] 		= "10000000000000000000000000000000000000000000000000000
 static char R_MINUS_25519[] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 static char PN_25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 static char A_25519[] 		= "26";
+static char N_25519[]		= "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed";
 
 int
 main(int argc, char const *argv[])
@@ -197,13 +198,18 @@ main(int argc, char const *argv[])
 
 	printf("curve mult\n");
 	start = clock();
-	ecp_mul(curvetest, PR2, c, p, pn, PR3);
+	ecp_mul(curvetest, curvetest->G, l, p, pn, PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(&PR3->x);
 	big_to_hex(&PR3->y);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
+
+	big_rand_8dig(p);
+	big_to_hex(p);
+	hex_to_big(N_25519, a);
+	big_to_hex(a);	
 
 	free(PR);
 	free(PR2);
@@ -213,6 +219,7 @@ main(int argc, char const *argv[])
 	big_free(b);
 	big_free(c);
 	big_free(d);
+	big_free(l);
 	big_free(p);
 	big_free(r);
 	big_free(A);

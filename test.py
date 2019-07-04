@@ -128,3 +128,14 @@ r = pow(a, (p - 1) // 2, p)
 end = time()
 print(r)
 print("%0f\n" % (end - start))
+
+bits = 255
+mn = bits >> 5
+print(mn)
+print(((mn + 1) * 32) - (bits))
+
+
+tst = 0x1FFFFFFF
+print(bin(tst))
+tst = 0xFFFFFFFF
+print(bin(tst))

@@ -431,27 +431,23 @@ big_and(big_t *a, big_t *b, big_t *r)
 	register dig_t *ap = a->value, *bp = b->value, *rp = r->value, *stop = r->value + g;
 	big_null(r);
 
-	if (a->sign == false) {
-		for (; rp <= stop; rp++, ap++, bp++) {
-			*rp = (*ap) & (*bp);
-		}
+	for (; rp <= stop; rp++, ap++, bp++) {
+		*rp = (*ap) & (*bp);
 	}
 
-	else {
-		for (; rp <= stop; rp++, ap++, bp++) {
-			*rp = (*ap) ^ (*bp);
-		}
+	if (a->sign == true) {
+		
+		big_t one, t; 
+		big_sub(b, r, &t);
 
-		if ((*r->value) < BIG_BASE_M) {
+		if ((*t.value) < BIG_BASE_M) {
+			big_cpy(&t, r);
 			(*r->value)++;
 		}
-		
 		else {
-			big_t t, one;
 			big_null(&one);
-			one.value[0] = 1ull;
-			big_sum(&one, r, &t);
-			big_cpy(&t, r);
+			(*one.value) = 1;
+			big_sum(&t, &one, r);
 		}
 	}
 }
@@ -618,7 +614,8 @@ big_fastmod_25519(big_t *a, big_t *p, big_t *pn, big_t *r)
 		big_rst_word(r, 8, &t1);
 		big_lst(&t1, &tmpq);
 
-		(*tmpq.value) += (msb >> 31);
+		msb = msb >> 31;
+		(*tmpq.value) = (*tmpq.value) + msb;
 
 		big_and(r, pn, &t1);
 		big_mul(&tmpq, &tmpk, &t2);
@@ -690,4 +687,22 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 	}
 
 	big_eql(&u, &one) ? big_mod(&x1, b, r) : big_mod(&x2, b, r);
+}
+
+void
+big_rand_8dig(big_t *r)
+{
+	big_null(r);
+
+	register dig_t *rp = r->value, *tmprp = r->value;
+	unsigned long long rand_digit;
+	__builtin_ia32_rdrand64_step(&rand_digit);
+	(*rp++) = rand_digit & BIG_BASE_M;
+
+	for (int i = 1; i < 8; i++, rp++, tmprp++) {
+		__builtin_ia32_rdrand64_step(&rand_digit);
+		(*rp) = (rand_digit ^ (*tmprp)) & BIG_BASE_M;
+	}
+	//rp--;
+	//(*rp) = *rp & 0x1FFFFFFF;
 }

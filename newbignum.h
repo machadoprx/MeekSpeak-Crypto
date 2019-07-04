@@ -56,5 +56,6 @@ void 	big_to_hex			(big_t *);
 dig_t*	big_to_bin			(big_t *, int *);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
+void	big_rand_8dig		(big_t *);
 
 #endif
