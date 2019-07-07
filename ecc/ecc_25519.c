@@ -12,151 +12,161 @@ ec_t*
 ec_init_c25519()
 {
     ec_t *curve = malloc(sizeof(ec_t));
-    char GY_25519[] = "20ae19a1b8a086b4e01edd2c7748d14c923d4d7e6d7c61b229e9c5a27eced3d9";
-    char *Gy = GY_25519;
-    curve->G = ecp_new();
-    curve->G->x.value[0] = GX_25519;
     big_null(&curve->A);
+    curve->G = ecp_new();
+    curve->G->X.value[0] = GX_25519;
+    curve->G->Z.value[0] = GZ_25519;
     curve->A.value[0] = GA_25519;
-    hex_to_big(Gy, &curve->G->y);
     return curve;
 }
 
 void
 ecp_null(ecp_t *P)
 {
-    memset(P->x.value, 0, BIG_WORDS_SIZE);
-    memset(P->y.value, 0, BIG_WORDS_SIZE);
-    P->x.sign = false;
-    P->y.sign = false;
+    memset(P->X.value, 0, BIG_WORDS_SIZE);
+    memset(P->Z.value, 0, BIG_WORDS_SIZE);
+    P->X.sign = false;
+    P->Z.sign = false;
+}
+
+void
+ecp_cpy(ecp_t *P, ecp_t *R)
+{
+    memcpy(R->X.value, P->X.value, BIG_WORDS_SIZE);
+    memcpy(R->Z.value, P->Z.value, BIG_WORDS_SIZE);
+    R->X.sign = P->X.sign;
+    R->Z.sign = P->Z.sign;
 }
 
 void
 ecp_add(ec_t *curve, ecp_t *P, ecp_t *Q, big_t *p, big_t *pn, ecp_t *R)
 {
-    big_t t1, t2, t3, t4, common;
+    ecp_null(R);
 
-    big_sub(&P->y, &Q->y, &t4);
-    big_fastmod_25519(&t4, p, pn, &t3);
+    if (*(P->X.value) == ECP_INF) {
+        ecp_cpy(Q, R);
+        return;
+    }
 
-    big_sub(&P->x, &Q->x, &t4);
-    big_fastmod_25519(&t4, p, pn, &t1);
+    if (*(Q->X.value) == ECP_INF) {
+        ecp_cpy(P, R);
+        return;
+    }
 
-    big_mod_inv(&t1, p, &t4);
-    big_mul(&t3, &t4, &t2);
-    big_fastmod_25519(&t2, p, pn, &t1);
-    big_cpy(&t1, &common);
+    big_t t1, t2, t3, four;
+    big_null(&four);
+    hex_to_big("4", &four);
 
-    big_mul(&t1, &t1, &t2);
-    big_fastmod_25519(&t2, p, pn, &t1);
-
-    big_sub(&t1, &curve->A, &t2);
-    big_fastmod_25519(&t2, p, pn, &t1);
-    
-    big_sub(&t1, &P->x, &t2);
-    big_fastmod_25519(&t2, p, pn, &t1);
-
-    big_sub(&t1, &Q->x, &t2);
-    big_fastmod_25519(&t2, p, pn, &R->x);
-
-    // y3
-    big_sub(&P->x, &R->x, &t1);
+    big_mul(&P->X, &Q->X, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
 
-    big_mul(&t2, &common, &t1);
+    big_mul(&P->Z, &Q->Z, &t1);
+    big_fastmod_25519(&t1, p, pn, &t3);
+
+    big_sub(&t2, &t3, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
 
-    big_sub(&t2, &P->y, &t1);
-    big_fastmod_25519(&t1, p, pn, &R->y);
+    big_mul(&t2, &t2, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_mul(&t2, &four, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->X);
+
+    big_mul(&P->X, &Q->Z, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_mul(&P->Z, &Q->X, &t1);
+    big_fastmod_25519(&t1, p, pn, &t3);
+
+    big_sub(&t2, &t3, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_mul(&t2, &t2, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_mul(&t2, &four, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_mul(&t2, &curve->G->X, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->Z);
+
 }
 
 void
 ecp_double(ec_t *curve, ecp_t *P, big_t *p, big_t *pn, ecp_t *R)
 {
-    big_t t1, t2, t3, t4, l, lsqr;
+    ecp_null(R);
 
-    big_mul(&P->x, &P->x, &t1);
+    if (*(P->X.value) == ECP_INF) {
+        *(R->X.value) = ECP_INF;
+        *(R->Z.value) = ECP_INF;
+        return;
+    }
+
+    big_t t1, t2, t3, x2, z2, xz, four;
+    big_null(&four);
+    hex_to_big("4", &four);
+    
+    big_mul(&P->X, &P->X, &t1);
     big_fastmod_25519(&t1, p, pn, &t2);
-    big_sum(&t2, &t2, &t1);
+    big_cpy(&t2, &x2);
+
+    big_mul(&P->Z, &P->Z, &t1);
     big_fastmod_25519(&t1, p, pn, &t3);
-    big_sum(&t3, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &t3); // milestone
-
-    big_mul(&curve->A, &P->x, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_sum(&t2, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_null(&t4);
-    (*t4.value) = 1ull;
-    big_sum(&t4, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-
-    big_sum(&t2, &t3, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2); // lnum
-
-    big_sum(&P->y, &P->y, &t3);
-    big_fastmod_25519(&t3, p, pn, &t1); 
-    big_mod_inv(&t1, p, &t3);
-    big_mul(&t3, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &l); // l
-
-    big_mul(&l, &l, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_cpy(&t2, &lsqr);
-
-    big_sub(&t2, &curve->A, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_sub(&t2, &P->x, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_sub(&t2, &P->x, &t1);
-    big_fastmod_25519(&t1, p, pn, &R->x); // x
-
-    big_sum(&P->x, &P->x, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_sum(&t2, &P->x, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_sum(&t2, &curve->A, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2);
-    big_mul(&l, &t2, &t1);
-    big_fastmod_25519(&t1, p, pn, &t2); // keep t2
-
-    big_mul(&lsqr, &l, &t1);
-    big_fastmod_25519(&t1, p, pn, &t3); // aqui
+    big_cpy(&t3, &z2);
 
     big_sub(&t2, &t3, &t1);
-    big_fastmod_25519(&t1, p, pn, &t3);
-    big_sub(&t3, &P->y, &t1);
-    big_fastmod_25519(&t1, p, pn, &R->y);
+    big_fastmod_25519(&t1, p, pn, &t2);
 
+    big_mul(&t2, &t2, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->X);
+
+    big_mul(&P->X, &P->Z, &t1);
+    big_fastmod_25519(&t1, p, pn, &xz);
+
+    big_mul(&curve->A, &xz, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_sum(&t2, &x2, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2);
+
+    big_sum(&t2, &z2, &t1);
+    big_fastmod_25519(&t1, p, pn, &t2); //guarda
+
+    big_mul(&xz, &four, &t1);
+    big_fastmod_25519(&t1, p, pn, &t3);
+
+    big_mul(&t2, &t3, &t1);
+    big_fastmod_25519(&t1, p, pn, &R->Z);
 }
 
 void
 ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, big_t *pn, ecp_t *R)
 {
     int lenght = 0;
-    ecp_t Q, T1;
+    ecp_t R0, R1, t1;
+    ecp_null(&R0);
+    *(R0.X.value) = ECP_INF;
+    *(R0.Z.value) = ECP_INF;
+    ecp_cpy(P, &R1);
     dig_t *kbits = big_to_bin(k, &lenght);
-    dig_t *bit = kbits + 1;
+    dig_t *bit = kbits;
 
-    big_cpy(&P->x, &Q.x);
-    big_cpy(&P->y, &Q.y);
-    lenght--;
-
-    while (lenght-- > 0) {
-
-        ecp_double(curve, &Q, p, pn, &T1);
-        big_cpy(&T1.x, &Q.x);
-        big_cpy(&T1.y, &Q.y);
-
-        if (*(bit++)) {
-            ecp_add(curve, &Q, P, p, pn, &T1);
-            big_cpy(&T1.x, &Q.x);
-            big_cpy(&T1.y, &Q.y);
+    for (int i = lenght; i > 0; i--, bit++) {
+        if (*bit) {
+            ecp_add(curve, &R0, &R1, p, pn, &t1);
+            ecp_cpy(&t1, &R0);
+            ecp_double(curve, &R1, p, pn, &t1);
+            ecp_cpy(&t1, &R1);
+        }
+        else {
+            ecp_add(curve, &R0, &R1, p, pn, &t1);
+            ecp_cpy(&t1, &R1);
+            ecp_double(curve, &R0, p, pn, &t1);
+            ecp_cpy(&t1, &R0);
         }
     }
 
-    big_cpy(&Q.x, &R->x);
-    big_cpy(&Q.y, &R->y);
+    ecp_cpy(&R0, R);
     free(kbits);
-
 }

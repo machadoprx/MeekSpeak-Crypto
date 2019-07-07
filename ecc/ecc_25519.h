@@ -1,10 +1,12 @@
 #include "../bn/bn.h"
 
 #define GX_25519 9
+#define GZ_25519 1
 #define GA_25519 486662
+#define ECP_INF  -666
 
 typedef struct _ecp_t{
-    big_t x, y;
+    big_t X, Z;
 }ecp_t;
 
 typedef struct _ec_t{

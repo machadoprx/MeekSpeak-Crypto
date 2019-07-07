@@ -693,16 +693,13 @@ void
 big_rand_8dig(big_t *r)
 {
 	big_null(r);
-
 	register dig_t *rp = r->value, *tmprp = r->value;
 	unsigned long long rand_digit;
 	__builtin_ia32_rdrand64_step(&rand_digit);
-	*(rp++) = rand_digit & BIG_BASE_M;
+	*(rp++) = (rand_digit ^ (rand_digit >> BIG_DIGIT_BITS)) & BIG_BASE_M;
 
 	for (int i = 1; i < 8; i++, rp++, tmprp++) {
 		__builtin_ia32_rdrand64_step(&rand_digit);
-		(*rp) = (rand_digit ^ (*tmprp)) & BIG_BASE_M;
+		(*rp) = ((rand_digit ^ (*tmprp >> BIG_DIGIT_BITS)) ^ *tmprp) & BIG_BASE_M;
 	}
-	//rp--;
-	//(*rp) = *rp & 0x1FFFFFFF;
 }

@@ -181,8 +181,10 @@ main(int argc, char const *argv[])
 	ecp_double(curvetest, curvetest->G, p, pn, PR);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(&PR->x);
-	big_to_hex(&PR->y);
+	big_mod_inv(&PR->Z, p, a);
+	big_mul(a, &PR->X, d);
+	big_fastmod_25519(d, p, pn, r);
+	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
@@ -191,8 +193,10 @@ main(int argc, char const *argv[])
 	ecp_add(curvetest, PR, curvetest->G, p, pn, PR2);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(&PR2->x);
-	big_to_hex(&PR2->y);
+	big_mod_inv(&PR2->Z, p, a);
+	big_mul(a, &PR2->X, d);
+	big_fastmod_25519(d, p, pn, r);
+	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
@@ -201,15 +205,22 @@ main(int argc, char const *argv[])
 	ecp_mul(curvetest, curvetest->G, l, p, pn, PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(&PR3->x);
-	big_to_hex(&PR3->y);
+	big_mod_inv(&PR3->Z, p, a);
+	big_mul(a, &PR3->X, d);
+	big_fastmod_25519(d, p, pn, r);
+	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	big_rand_8dig(p);
-	big_to_hex(p);
-	hex_to_big(N_25519, a);
-	big_to_hex(a);	
+	printf("rand 255bits\n");
+	start = clock();
+    big_rand_8dig(r);
+	end = clock();
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	big_to_hex(r);
+	big_null(r);
+	printf("%lf\n", cpu_time_used);
+	printf("\n");
 
 	free(PR);
 	free(PR2);
