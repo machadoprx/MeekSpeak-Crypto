@@ -6,7 +6,6 @@ static char P25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffff
 static char BETA_25519[] 	= "d0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5";
 static char R_25519[] 		= "10000000000000000000000000000000000000000000000000000000000000000";
 static char R_MINUS_25519[] = "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
-static char PN_25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
 static char A_25519[] 		= "26";
 static char N_25519[]		= "1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed";
 
@@ -15,21 +14,15 @@ main(int argc, char const *argv[])
 {
 	clock_t start, end;
     double cpu_time_used;
-	big_t *a = big_new();
-	big_t *b = big_new();
-	big_t *c = big_new();
-	big_t *d = big_new();
-	big_t *p = big_new();
-	big_t *r = big_new();
-	big_t *A = big_new();
-	big_t *R = big_new();
-	big_t *beta = big_new();
-	big_t *Rm = big_new();
-	big_t *pn = big_new();
+
+	big_t *a = big_new(); big_t *b = big_new();
+	big_t *c = big_new(); big_t *d = big_new();
+	big_t *p = big_new(); big_t *r = big_new();
+	big_t *A = big_new(); big_t *R = big_new();
+	big_t *beta = big_new(); big_t *Rm = big_new();
 	big_t *l = big_new();
 
 	hex_to_big(BETA_25519, beta);
-	beta->sign = true;
 	hex_to_big(R_25519, R);
 	hex_to_big(A_25519, A);
 	hex_to_big(R_MINUS_25519, Rm);
@@ -39,11 +32,11 @@ main(int argc, char const *argv[])
 	hex_to_big("1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534", l);
 	hex_to_big("9ac6241f", c);
 	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faa002f53134d7bb030ed3bbcebcd28b466227cc87766421df596a50c58c21d04c88ebf9ed887b58bf7112dc", d);
-	hex_to_big(PN_25519, pn);
+	beta->sign = true;
 
 	printf("Mod\n");
 	start = clock();
-	big_fastmod_25519(d, p, pn, r);
+	big_fastmod_25519(d, p, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -83,7 +76,7 @@ main(int argc, char const *argv[])
 
 	printf("Power Mod\n");
 	start = clock();
-	big_mont_pow(a, c, p, A, R, beta, Rm, pn, r);
+	big_mont_pow(a, c, p, A, R, beta, Rm, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -154,7 +147,7 @@ main(int argc, char const *argv[])
 	hex_to_big(A_25519, A);
 	printf("legendre\n");
 	start = clock();
-	int x = big_legendre_symbol(a, p, A, R, beta, Rm, pn);
+	int x = big_legendre_symbol(a, p, A, R, beta, Rm);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	printf("%d\n", x);
@@ -178,41 +171,35 @@ main(int argc, char const *argv[])
 
 	printf("curve double\n");
 	start = clock();
-	ecp_double(curvetest, curvetest->G, p, pn, PR);
+	ecp_double(curvetest, curvetest->G, p, PR);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_mod_inv(&PR->Z, p, a);
-	big_mul(a, &PR->X, d);
-	big_fastmod_25519(d, p, pn, r);
+	ecp_get_affine(PR, p, r);
 	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
 	printf("curve add\n");
 	start = clock();
-	ecp_add(curvetest, PR, curvetest->G, p, pn, PR2);
+	ecp_add(curvetest, PR, curvetest->G, p, PR2);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_mod_inv(&PR2->Z, p, a);
-	big_mul(a, &PR2->X, d);
-	big_fastmod_25519(d, p, pn, r);
+	ecp_get_affine(PR2, p, r);
 	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
 	printf("curve mult\n");
 	start = clock();
-	ecp_mul(curvetest, curvetest->G, l, p, pn, PR3);
+	ecp_mul(curvetest, curvetest->G, l, p, PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_mod_inv(&PR3->Z, p, a);
-	big_mul(a, &PR3->X, d);
-	big_fastmod_25519(d, p, pn, r);
+	ecp_get_affine(PR3, p, r);
 	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	printf("rand 255bits\n");
+	printf("rand 8 digits\n");
 	start = clock();
     big_rand_8dig(r);
 	end = clock();
@@ -222,21 +209,14 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	free(PR);
-	free(PR2);
-	free(PR3);
-	free(curvetest);
-	big_free(a);
-	big_free(b);
-	big_free(c);
-	big_free(d);
-	big_free(l);
-	big_free(p);
-	big_free(r);
-	big_free(A);
-	big_free(R);
-	big_free(Rm);
-	big_free(beta);
-	big_free(pn);
+	free(PR); free(PR2);
+	free(PR3); free(curvetest->G);
+	free(curvetest); big_free(a);
+	big_free(b); big_free(c);
+	big_free(d); big_free(l);
+	big_free(p); big_free(r);
+	big_free(A); big_free(R);
+	big_free(Rm); big_free(beta);
+	
 	return 0;
 }

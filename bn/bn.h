@@ -1,5 +1,4 @@
-#ifndef NEWBIGNUM_H
-#define NEWBIGNUM_H
+#pragma once
 
 #include <stdio.h>
 #include <string.h>
@@ -16,6 +15,7 @@
 #define BIG_LESS 			0
 #define BIG_EQUAL 			1
 #define BIG_GREATER 		2
+#define K_25519				19
 
 // Big Integer structure
 #define twodig_t 			__uint128_t
@@ -38,10 +38,10 @@ void	big_mul_nasty		(big_t *, big_t *, big_t *);
 void	big_sqr				(big_t *, big_t *);
 void 	big_sub				(big_t *, big_t *, big_t *);
 void 	big_sum				(big_t *, big_t *, big_t *);
-void	big_mont_pow		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
+void	big_mont_pow		(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 void 	big_mod_inv			(big_t *, big_t *, big_t *);
 void 	big_mod				(big_t *, big_t *, big_t *);
-void	big_fastmod_25519	(big_t *, big_t *, big_t *, big_t *);
+void	big_fastmod_25519	(big_t *, big_t *, big_t *);
 void	big_lst				(big_t *, big_t *);
 void 	big_rst				(big_t *, big_t *);
 void 	big_rst_word		(big_t *, int, big_t *);
@@ -51,12 +51,10 @@ void 	big_and				(big_t *, big_t *, big_t *);
 // Utility functions (Compare, primes...)
 int 	big_gth				(big_t *, big_t *);
 int 	big_gth_uns			(big_t *, big_t *);
-int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
+int 	big_legendre_symbol	(big_t *, big_t *, big_t *, big_t *, big_t *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);
 dig_t*	big_to_bin			(big_t *, int *);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
 void	big_rand_8dig		(big_t *);
-
-#endif
