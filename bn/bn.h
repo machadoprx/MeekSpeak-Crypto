@@ -15,10 +15,11 @@
 #define BIG_LESS 			0
 #define BIG_EQUAL 			1
 #define BIG_GREATER 		2
-#define K_25519				19
+#define K_25519				19ull
+#define EVEN(a)				(!(a.value[0] & 1))
 
 // Big Integer structure
-#define twodig_t 			__uint128_t
+#define twodig_t 			unsigned __int128
 #define dig_t				uint64_t
 
 typedef struct _big_t{

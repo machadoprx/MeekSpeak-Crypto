@@ -139,3 +139,6 @@ tst = 0x1FFFFFFF
 print(bin(tst))
 tst = 0xFFFFFFFF
 print(bin(tst))
+tst = 0x100000000
+tst = 1
+print(hex(tst << 32))

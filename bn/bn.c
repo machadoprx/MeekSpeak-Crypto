@@ -258,7 +258,7 @@ big_sum(big_t *a, big_t *b, big_t *r)
 		gp = b->value;
 		int t = n; n = m; m = t;
 	}
-
+	
 	register dig_t *stop1 = r->value + n + 1, *stop2 = r->value + m;
 
 	for (; rp <= stop2; lp++, gp++, rp++) {
@@ -468,12 +468,14 @@ big_rst_word(big_t *a, int s, big_t *r)
 void
 big_rst(big_t *a, big_t *r)
 {
+	big_null(r);
+
 	int n = big_get_lnt(a);
 	register dig_t *ap = a->value + n, *rp = r->value + n, lsb = 0;
-	big_null(r);
-	
+
 	for (; rp >= r->value; ap--, rp--) {
-		*rp = lsb ? ((*ap) | BIG_BASE) >> 1ull : (*ap) >> 1ull;
+
+		*rp = ((*ap) | (lsb << BIG_DIGIT_BITS)) >> 1;
 		lsb = (*ap) & 1ull;
 	}
 
@@ -652,10 +654,10 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 
 	while (!big_eql(&u, &one) && !big_eql(&v, &one)) {
 
-		while (!(*(u.value) & 1ull)) {
+		while (EVEN(u)) {
 			big_rst(&u, &t);
 			big_cpy(&t, &u);
-			if ((*(x1.value) & 1ull)) {
+			if (EVEN(x1)) {
 				big_sum(&x1, b, &t);
 				big_cpy(&t, &x1);
 			}
@@ -663,10 +665,10 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 			big_cpy(&t, &x1);
 		}
 
-		while (!(*(v.value) & 1ull)) {
+		while (EVEN(v)) {
 			big_rst(&v, &t);
 			big_cpy(&t, &v);
-			if ((*(x2.value) & 1ull)) {
+			if (EVEN(x2)) {
 				big_sum(&x2, b, &t);
 				big_cpy(&t, &x2);
 			}

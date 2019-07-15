@@ -127,7 +127,7 @@ void
 ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
 {
     ecp_null(R);
-
+    // no sanity check for k == 0 / do it in call
     int bit_len;
     ecp_t R0, R1, t1;
     
@@ -141,7 +141,7 @@ ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     bit_len--;
 
     for (int i = bit_len; i > 0; i--, bit++) {
-        if (*bit) {
+        if (*bit != 0) {
             ecp_add(curve, &R0, &R1, p, &t1); 
             ecp_cpy(&t1, &R0);
             ecp_double(curve, &R1, p, &t1);

@@ -2,6 +2,20 @@
 #include "../ecc/ecc_25519.h"
 #include <time.h>
 
+#define f_apply(type, f, ...) {									\
+	void *stop_loop = (int[]){0};								\
+	type **list = (type*[]){__VA_ARGS__, stop_loop};			\
+	for (int i = 0; list[i] != stop_loop; i++)					\
+		f(list[i]);												\
+}
+
+#define f_return(type, f, ...) {									\
+	void *stop_loop = (int[]){0};								\
+	type **list = (type*[]){__VA_ARGS__, stop_loop};			\
+	for (int i = 0; list[i] != stop_loop; i++)					\
+		list[i] = f();												\
+}
+
 static char P25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
 static char BETA_25519[] 	= "d0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5";
 static char R_25519[] 		= "10000000000000000000000000000000000000000000000000000000000000000";
@@ -21,6 +35,8 @@ main(int argc, char const *argv[])
 	big_t *A = big_new(); big_t *R = big_new();
 	big_t *beta = big_new(); big_t *Rm = big_new();
 	big_t *l = big_new();
+
+	//f_return(void, big_new, a, b, c, d, p, r, A, R, beta, Rm, l);
 
 	hex_to_big(BETA_25519, beta);
 	hex_to_big(R_25519, R);
@@ -209,14 +225,8 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	free(PR); free(PR2);
-	free(PR3); free(curvetest->G);
-	free(curvetest); big_free(a);
-	big_free(b); big_free(c);
-	big_free(d); big_free(l);
-	big_free(p); big_free(r);
-	big_free(A); big_free(R);
-	big_free(Rm); big_free(beta);
+	f_apply(void, free, PR, PR2, PR3, curvetest->G, curvetest);
+	f_apply(void, big_free, a, b, c, d, l, p, r, A, R, Rm, beta);
 	
 	return 0;
 }
