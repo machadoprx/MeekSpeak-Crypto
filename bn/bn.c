@@ -1,23 +1,5 @@
 #include "bn.h"
 
-big_t*
-big_new()
-{
-	big_t *t = malloc(sizeof(struct _big_t));
-	memset(t->value, 0, BIG_WORDS_SIZE);
-	t->sign = false;
-	return t;
-}
-
-void
-big_free(big_t *a)
-{
-	if (a == NULL) {
-		return;
-	}
-	free(a);
-}
-
 int
 big_get_lnt(big_t *a)
 {
@@ -61,20 +43,6 @@ big_to_bin(big_t *a, int *lenght)
 	*lenght = mswbits + (k * BIG_DIGIT_BITS);
 
 	return bin;
-}
-
-void
-big_null(big_t *a)
-{
-	memset(a->value, 0, BIG_WORDS_SIZE);
-	a->sign = false;
-}
-
-void
-big_cpy(big_t *a, big_t *r)
-{
-	memcpy(r->value, a->value, BIG_WORDS_SIZE);
-	r->sign = a->sign; 
 }
 
 dig_t
@@ -471,7 +439,7 @@ big_rst(big_t *a, big_t *r)
 	big_null(r);
 
 	int n = big_get_lnt(a);
-	register dig_t *ap = a->value + n, *rp = r->value + n, lsb = 0;
+	register dig_t *ap = a->value + n, *rp = r->value + n, lsb = 0ull;
 
 	for (; rp >= r->value; ap--, rp--) {
 
@@ -555,7 +523,7 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	register int n = big_get_lnt(a);
 	register int m = big_get_lnt(b);
 	register int g = n + m + 1, i, j;
-	register dig_t uv = 0, u = 0, *rp = r->value, *ap, *bp, *tbp;
+	register dig_t uv = 0ull, u = 0ull, *rp = r->value, *ap, *bp, *tbp;
 	
 	if (n < m) {
 		int t = n;
@@ -657,7 +625,7 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 		while (EVEN(u)) {
 			big_rst(&u, &t);
 			big_cpy(&t, &u);
-			if (EVEN(x1)) {
+			if (!EVEN(x1)) {
 				big_sum(&x1, b, &t);
 				big_cpy(&t, &x1);
 			}
@@ -668,7 +636,7 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 		while (EVEN(v)) {
 			big_rst(&v, &t);
 			big_cpy(&t, &v);
-			if (EVEN(x2)) {
+			if (!EVEN(x2)) {
 				big_sum(&x2, b, &t);
 				big_cpy(&t, &x2);
 			}
@@ -676,7 +644,7 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 			big_cpy(&t, &x2);
 		}
 
-		if (big_gth(&u, &v) >= BIG_EQUAL) {
+		if (big_gth(&u, &v) > BIG_LESS) {
 			big_sub(&u, &v, &t);
 			big_cpy(&t, &u);
 			big_sub(&x1, &x2, &t);
@@ -700,13 +668,25 @@ big_rand_8dig(big_t *r)
 {
 	big_null(r);
 	
-	register dig_t *rp = r->value, *tmprp = r->value;
-	unsigned long long rand_digit;
-	__builtin_ia32_rdrand64_step(&rand_digit);
-	*(rp++) = (rand_digit ^ (rand_digit >> BIG_DIGIT_BITS)) & BIG_BASE_M;
+	int i;
+	register dig_t *rp = r->value;
+	uint32_t key[8], nounce[3], out[1][16];
+	unsigned int rand_digit;
 
-	for (int i = 1; i < 8; i++, rp++, tmprp++) {
-		__builtin_ia32_rdrand64_step(&rand_digit);
-		(*rp) = ((rand_digit ^ (rand_digit >> BIG_DIGIT_BITS)) ^ *tmprp) & BIG_BASE_M;
+	for (i = 0; i < 8; i++) {
+		__builtin_ia32_rdrand32_step(&rand_digit);
+		key[i] = rand_digit;
 	}
+
+	for (i = 0; i < 3; i++) {
+		__builtin_ia32_rdrand32_step(&rand_digit);
+		nounce[i] = rand_digit;
+	}
+
+	chacha_enc(key, nounce, 0, 1, 8, out);	
+
+	for (i = 0; i < 8; i++) {
+		*(rp++) = (*out)[i] ^ (*out)[15 - i];
+	}
+
 }

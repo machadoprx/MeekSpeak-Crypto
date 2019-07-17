@@ -9,13 +9,6 @@
 		f(list[i]);												\
 }
 
-#define f_return(type, f, ...) {									\
-	void *stop_loop = (int[]){0};								\
-	type **list = (type*[]){__VA_ARGS__, stop_loop};			\
-	for (int i = 0; list[i] != stop_loop; i++)					\
-		list[i] = f();												\
-}
-
 static char P25519[] 		= "7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed";
 static char BETA_25519[] 	= "d0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5";
 static char R_25519[] 		= "10000000000000000000000000000000000000000000000000000000000000000";
@@ -29,20 +22,20 @@ main(int argc, char const *argv[])
 	clock_t start, end;
     double cpu_time_used;
 
-	big_t *a = big_new(); big_t *b = big_new();
-	big_t *c = big_new(); big_t *d = big_new();
-	big_t *p = big_new(); big_t *r = big_new();
-	big_t *A = big_new(); big_t *R = big_new();
-	big_t *beta = big_new(); big_t *Rm = big_new();
-	big_t *l = big_new();
-
-	//f_return(void, big_new, a, b, c, d, p, r, A, R, beta, Rm, l);
+	big_t *a, *b, *c, *d, *p, *r, *A, *R, *beta, *Rm, *l, *np;
+	big_new(a);	big_new(b);
+	big_new(c);	big_new(d);
+	big_new(p);	big_new(r);
+	big_new(A);	big_new(R);
+	big_new(beta); big_new(Rm);
+	big_new(l);	big_new(np);
 
 	hex_to_big(BETA_25519, beta);
 	hex_to_big(R_25519, R);
 	hex_to_big(A_25519, A);
 	hex_to_big(R_MINUS_25519, Rm);
 	hex_to_big(P25519, p);
+	hex_to_big(N_25519, np);
 	hex_to_big("35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9", a);
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", b);
 	hex_to_big("1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534", l);
@@ -214,10 +207,15 @@ main(int argc, char const *argv[])
 	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
+	big_null(r);
 
 	printf("rand 8 digits\n");
 	start = clock();
-    big_rand_8dig(r);
+	big_to_hex(np);
+	big_rand_8dig(r);
+	while (big_gth_uns(r, np)) {
+    	big_rand_8dig(r);
+	}
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);

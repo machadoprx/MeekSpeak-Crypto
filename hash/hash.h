@@ -12,3 +12,5 @@
 #ifndef STRING_H
     #include <string.h>
 #endif
+
+void chacha_enc(uint32_t key[8], uint32_t nounce[3], uint32_t counter, uint32_t blocks, int rounds, uint32_t out[][16]);

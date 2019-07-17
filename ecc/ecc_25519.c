@@ -3,7 +3,7 @@
 ecp_t*
 ecp_new()
 {
-    ecp_t *P = malloc(sizeof(ecp_t));
+    ecp_t *P = calloc(1, sizeof(ecp_t));
     ecp_null(P);
     return P;
 }

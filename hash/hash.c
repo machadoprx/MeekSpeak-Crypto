@@ -1,14 +1,14 @@
 #include "hash.h"
 
 void 
-chacha20_block(uint32_t in[16], uint32_t out[16])
+chacha_block(uint32_t in[16], int rounds, uint32_t out[16])
 {
-	int i;
+	int i, end = rounds >> 1;
 	uint32_t old[16];
 
     memcpy(old, in, sizeof(uint32_t) * 16);
 
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < end; i++) {
 		QR(in[0], in[4], in[8 ], in[12]); 
 		QR(in[1], in[5], in[9 ], in[13]); 
 		QR(in[2], in[6], in[10], in[14]); 
@@ -25,52 +25,28 @@ chacha20_block(uint32_t in[16], uint32_t out[16])
 }
 
 void
-chacha20_enc(uint32_t key[8], uint32_t nounce[3], uint32_t msg[], uint32_t msg_bytes, uint32_t out[][16])
+chacha_enc(uint32_t key[8], uint32_t nounce[3], uint32_t counter, uint32_t blocks, int rounds, uint32_t out[][16])
 {
-    int i = 4, j = 0, m = 0;
-    uint32_t inp_block[16], hash_block[16], cipher_blocks[(msg_bytes >> 2) + 1][16];
-
-    inp_block[0] = 0x61707865;
-    inp_block[1] = 0x3320646e;
-    inp_block[2] = 0x79622d32;
-    inp_block[3] = 0x6b206574;
-
-    for (; i < 12; i++) {
-        inp_block[i] = key[i - 4];
-    }
-
-    inp_block[12] = 0;
+    uint32_t inp_block[16];
+    inp_block[0] = 0xfa835867;
+    inp_block[1] = 0x2086ca69;
+    inp_block[2] = 0x1467c0fb;
+    inp_block[3] = 0x638e2b99;
+    inp_block[4] = key[0];
+    inp_block[5] = key[1];
+    inp_block[6] = key[2];
+    inp_block[7] = key[3];
+    inp_block[8] = key[4];
+    inp_block[9] = key[5];
+    inp_block[10] = key[6];
+    inp_block[11] = key[7];
+    inp_block[12] = counter;
     inp_block[13] = nounce[0];
     inp_block[14] = nounce[1];
     inp_block[15] = nounce[2];
     
-    for (i = msg_bytes >> 2; i >= 0; i--, j++) {
-        chacha20_block(inp_block, hash_block);
+    for (int i = 0; i < blocks; i++) {
+        chacha_block(inp_block, rounds, out[i]);
         inp_block[12]++;
-        for (int k = 0; k < 16; k++) {
-            out[j][k] = msg[m++] ^ hash_block[k];
-            if (m > (msg_bytes >> 2)) {
-                return;
-            }
-        }
-        j++;
     }
-}
-
-void
-sha3_256()
-{
-    return;
-}
-
-void
-aes_256_soft()
-{
-    return;
-}
-
-void
-aes_256_hard()
-{
-    return;
 }

@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include "../hash/hash.h"
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
@@ -16,22 +17,24 @@
 #define BIG_EQUAL 			1
 #define BIG_GREATER 		2
 #define K_25519				19ull
-#define EVEN(a)				(!(a.value[0] & 1))
+#define EVEN(a)				(!(*(a.value) & 1ull))
 
-// Big Integer structure
+// Big Integer structure and init functions
 #define twodig_t 			unsigned __int128
 #define dig_t				uint64_t
+#define big_new(a)			a = calloc(1, sizeof(struct _big_t));
+#define big_free(a)			if (a != NULL) free(a);
+
+#define big_cpy(a, b)		memcpy(((big_t*)b)->value, ((big_t*)a)->value, BIG_WORDS_SIZE); 	\
+							((big_t*)b)->sign = ((big_t*)a)->sign;								
+
+#define big_null(a)			memset(((big_t*)a)->value, 0, BIG_WORDS_SIZE); 						\
+							((big_t*)a)->sign = false;
 
 typedef struct _big_t{
 	dig_t					value[BIG_MAX_DIGITS];
 	bool 					sign;
 }big_t;
-
-// Initialization, copy and free's functions
-big_t* 	big_new				();
-void 	big_free			(big_t *);
-void 	big_null			(big_t *);
-void 	big_cpy				(big_t *, big_t *);
 
 // Logic and arithmetic operations functions
 void 	big_mul				(big_t *, big_t *, big_t *);
