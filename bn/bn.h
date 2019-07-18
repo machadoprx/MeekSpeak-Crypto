@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <immintrin.h>
 #include "../hash/hash.h"
 
 // Macros for organization
@@ -23,7 +24,6 @@
 #define twodig_t 			unsigned __int128
 #define dig_t				uint64_t
 #define big_new(a)			a = calloc(1, sizeof(struct _big_t));
-#define big_free(a)			if (a != NULL) free(a);
 
 #define big_cpy(a, b)		memcpy(((big_t*)b)->value, ((big_t*)a)->value, BIG_WORDS_SIZE); 	\
 							((big_t*)b)->sign = ((big_t*)a)->sign;								
@@ -38,7 +38,7 @@ typedef struct _big_t{
 
 // Logic and arithmetic operations functions
 void 	big_mul				(big_t *, big_t *, big_t *);
-void	big_mul_nasty		(big_t *, big_t *, big_t *);
+void	big_mul_kat			(big_t *, big_t *, big_t *);
 void	big_sqr				(big_t *, big_t *);
 void 	big_sub				(big_t *, big_t *, big_t *);
 void 	big_sum				(big_t *, big_t *, big_t *);
@@ -61,4 +61,5 @@ void 	big_to_hex			(big_t *);
 dig_t*	big_to_bin			(big_t *, int *);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
+int		big_get_len			(big_t *);
 void	big_rand_8dig		(big_t *);

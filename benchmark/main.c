@@ -125,7 +125,7 @@ main(int argc, char const *argv[])
 
 	printf("And Gate\n");
 	start = clock();
-    big_and(a, b, r);
+    big_and(beta, Rm, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -223,8 +223,7 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	f_apply(void, free, PR, PR2, PR3, curvetest->G, curvetest);
-	f_apply(void, big_free, a, b, c, d, l, p, r, A, R, Rm, beta);
+	f_apply(void, free, PR, PR2, PR3, curvetest->G, curvetest, a, b, c, d, l, p, r, A, R, Rm, beta);
 	
 	return 0;
 }

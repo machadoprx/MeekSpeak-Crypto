@@ -1,7 +1,7 @@
 #include "bn.h"
 
 int
-big_get_lnt(big_t *a)
+big_get_len(big_t *a)
 {
 	register int k = BIG_MAX_DIGITS - 1;
 	register dig_t *ap = a->value + k;
@@ -18,7 +18,7 @@ big_to_bin(big_t *a, int *lenght)
 {
 	dig_t *bin = malloc(512 * sizeof(dig_t));
 	register dig_t *p = bin;
-	register int k = big_get_lnt(a);	
+	register int k = big_get_len(a);	
 	register dig_t *ap = a->value + k, t = *(ap), mask = 0x80000000ull;
 	memset(bin, 0, 512 * sizeof(dig_t));
 	int mswbits = 0;
@@ -70,8 +70,8 @@ big_gth(big_t *a, big_t *b)
 int 
 big_gth_uns(big_t *a, big_t *b)
 {
-	register int n = big_get_lnt(a);
-	register int m = big_get_lnt(b);
+	register int n = big_get_len(a);
+	register int m = big_get_len(b);
 	
 	if (n != m) {
 		return n > m ? 2 : 0;
@@ -81,7 +81,7 @@ big_gth_uns(big_t *a, big_t *b)
     register dig_t *bp = b->value + n;
 	register int i = n;
 
-	while (i > 0 && *ap == *bp) {
+	while (i > 0 && (*ap == *bp)) {
 		ap--; bp--; i--;
 	}
 
@@ -153,7 +153,7 @@ big_legendre_symbol(big_t *a, big_t *b, big_t *A, big_t *R, big_t *beta, big_t *
 	big_t t, r;
 	big_rst(b, &t);
 	big_mont_pow(a, &t, b, A, R, beta, Rm, &r);
-	return (r.value[0] > 1ull) ? -1 : r.value[0];
+	return ((*r.value) > 1ull) ? -1 : (*r.value);
 }
 
 void
@@ -187,10 +187,10 @@ big_mont_pow(big_t *a, big_t *b, big_t *p, big_t *A, big_t *R, big_t *beta, big_
 	big_mul(a, R, &t);
 	big_fastmod_25519(&t, p, &xn); // for p = p25519 only
 
-	while (b_lenght--) {
+	while (b_lenght-- > 0) {
 		big_mul(A, A, &t);
 		big_mont(&t, p, Rm, beta, A);
-		if (*bit++) {
+		if (*(bit++) != 0) {
 			big_mul(A, &xn, &t);
 			big_mont(&t, p, Rm, beta, A);
 		}
@@ -213,7 +213,7 @@ big_sum(big_t *a, big_t *b, big_t *r)
 	}
 
 	big_null(r);
-	int n = big_get_lnt(a), m = big_get_lnt(b);
+	int n = big_get_len(a), m = big_get_len(b);
 	register dig_t w, carry = 0;
 	register dig_t *gp, *lp, *rp = r->value;
 
@@ -231,18 +231,14 @@ big_sum(big_t *a, big_t *b, big_t *r)
 
 	for (; rp <= stop2; lp++, gp++, rp++) {
 		w = carry + (*gp) + (*lp);
-		(*rp) = w & BIG_BASE_M;
-		carry = w >> BIG_DIGIT_BITS;
-	}
-
-	while (carry) { // may overflow
-		w = carry + (*gp++);
-		(*rp++) = w & BIG_BASE_M;
+		*rp = w & BIG_BASE_M;
 		carry = w >> BIG_DIGIT_BITS;
 	}
 
 	while (rp <= stop1) {
-		(*rp++) = (*gp++);
+		w = carry + *(gp++);
+		*(rp++) = w & BIG_BASE_M;
+		carry = w >> BIG_DIGIT_BITS;
 	}
 
 	r->sign = a->sign ? true : false;
@@ -270,10 +266,9 @@ big_sub(big_t *a, big_t *b, big_t *r)
 		return;
 	}
 
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b), t = -1;
-	register int64_t borrow = 0;
-	register dig_t *gp, *lp, *rp = r->value;
+	int n = big_get_len(a);
+	int m = big_get_len(b), t = -1;
+	register dig_t *gp, *lp, *rp = r->value, borrow = 0;
 	big_null(r);
 
 	if (big_gth_uns(a, b) > BIG_LESS) {
@@ -286,57 +281,32 @@ big_sub(big_t *a, big_t *b, big_t *r)
 		t = n; n = m; m = t; m++;
 	}
 
-	register dig_t *stop1 = r->value + n, *stop2 = r->value + m, shift = (8 * sizeof(dig_t) - 1);
+	register dig_t *stop1 = r->value + n, *stop2 = r->value + m, shift = ((8 * sizeof(dig_t)) - 1);
 
 	for (; rp <= stop2; gp++, lp++, rp++) {
 
-		(*rp) = (*gp) - (*lp) - borrow;	// warning: mix int with uint
-		borrow = (*rp) >> shift; // get msb (two complement's sign)
-		(*rp) = (*rp) & BIG_BASE_M; // assign modulo to result
+		*rp = (*gp) - (*lp) - borrow;
+		borrow = (*rp) >> shift;
+		*rp = (*rp) & BIG_BASE_M;
 	}
 
-	while (borrow) { // may overflow
+	while (rp <= stop1) {
 
-		(*rp) = (*gp) - borrow;	// warning: mix int with uint
+		*rp = (*gp) - borrow;
 		borrow = (*rp) >> shift;
-		(*rp) = (*rp) & BIG_BASE_M;
+		*rp = (*rp) & BIG_BASE_M;
 
 		rp++; gp++;
 	}
 
-	while (rp <= stop1) {
-		(*rp++) = (*gp++);
-	}
-
-	r->sign = t == -1 ? false : true;
-}
-
-void
-big_mul_nasty(big_t *a, big_t *b, big_t *r)
-{
-	big_null(r);
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b) + 1;
-	register dig_t uv, u;
-	register dig_t *ap = a->value, *bp, *rp = r->value, *trp, *stop1 = a->value + n, *stop2 = b->value + m;
-
-	for (; ap <= stop1; ap++, rp++) {
-		u = 0;
-		for (trp = rp, bp = b->value; bp <= stop2; bp++, trp++) {
-			uv = (*trp) + ((*ap) * (*bp)) + u;
-			u = uv >> BIG_DIGIT_BITS;
-			(*trp) = uv & BIG_BASE_M;
-		} 
-	}
-
-	r->sign = (a->sign ^ b->sign);
+	r->sign = (t == -1) ? false : true;
 }
 
 void
 big_sqr(big_t *a, big_t *r)
 {
 	big_null(r);
-	int n = big_get_lnt(a);
+	int n = big_get_len(a);
 	register twodig_t uv;
 	register dig_t *tmpt, *ap = a->value, *rp = r->value, *tmpap, tmpx, u, *stop = (a->value + n);
 
@@ -373,8 +343,8 @@ big_eql(big_t *a, big_t *b)
 		return false;
 	}
 
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
+	int n = big_get_len(a);
+	int m = big_get_len(b);
 	int g = n >= m ? n : m;
 	register dig_t *ap = a->value, *bp = b->value, *stop = a->value + g;
 
@@ -393,27 +363,31 @@ big_and(big_t *a, big_t *b, big_t *r)
 {
 	big_null(r);
 
-	int n = big_get_lnt(a);
-	int m = big_get_lnt(b);
+	int n = big_get_len(a);
+	int m = big_get_len(b);
 	int g = n >= m ? m : n;
 	register dig_t *ap = a->value, *bp = b->value, *rp = r->value, *stop = r->value + g;
 
-	for (; rp <= stop; rp++, ap++, bp++) {
-		*rp = (*ap) & (*bp);
+	if (a->sign == false) {
+		for (; rp <= stop; rp++, ap++, bp++) {
+			*rp = (*ap) & (*bp);
+		}
 	}
 
-	if (a->sign == true) { // for 2^k moduli use
+	else { // for negative numbers 2^k modulus
 		
-		big_t one, t; 
-		big_sub(b, r, &t);
+		for (; rp <= stop; rp++, ap++, bp++) {
+			*rp = (*ap) ^ (*bp);
+		}
 
-		if ((*t.value) < BIG_BASE_M) {
-			big_cpy(&t, r);
+		if ((*r->value) < BIG_BASE_M) {
 			(*r->value)++;
 		}
 		else {
+			big_t one, t; 
 			big_null(&one);
 			(*one.value) = 1;
+			big_cpy(r, &t);
 			big_sum(&t, &one, r);
 		}
 	}
@@ -422,7 +396,7 @@ big_and(big_t *a, big_t *b, big_t *r)
 void
 big_rst_word(big_t *a, int s, big_t *r)
 {
-	int n = big_get_lnt(a) - s;
+	int n = big_get_len(a) - s;
 	register dig_t *ap = a->value + s, *rp = r->value, *stop = r->value + n;
 	big_null(r);
 	
@@ -438,12 +412,12 @@ big_rst(big_t *a, big_t *r)
 {
 	big_null(r);
 
-	int n = big_get_lnt(a);
+	int n = big_get_len(a);
 	register dig_t *ap = a->value + n, *rp = r->value + n, lsb = 0ull;
 
 	for (; rp >= r->value; ap--, rp--) {
 
-		*rp = ((*ap) | (lsb << BIG_DIGIT_BITS)) >> 1;
+		*rp = ((*ap) >> 1) | (lsb << 31);
 		lsb = (*ap) & 1ull;
 	}
 
@@ -453,7 +427,7 @@ big_rst(big_t *a, big_t *r)
 void
 big_lst_word(big_t *a, int s, big_t *r)
 {
-	int n = big_get_lnt(a) + s;
+	int n = big_get_len(a) + s;
 	register dig_t *ap = a->value, *rp = r->value + s, *stop = r->value + n;
 	big_null(r);
 	
@@ -467,7 +441,7 @@ big_lst_word(big_t *a, int s, big_t *r)
 void
 big_lst(big_t *a, big_t *r)
 {
-	int n = big_get_lnt(a) + 1;
+	int n = big_get_len(a) + 1;
 	register dig_t t, carry = 0;
 	register dig_t *ap = a->value, *rp = r->value, *stop = r->value + n;
 	big_null(r);
@@ -484,7 +458,7 @@ big_lst(big_t *a, big_t *r)
 void
 big_to_hex(big_t *a)
 {
-	int n = big_get_lnt(a);
+	int n = big_get_len(a);
 	register dig_t *ap = a->value + n;
 
 	fputs("0x", stdout);
@@ -520,8 +494,8 @@ void
 big_mul(big_t *a, big_t *b, big_t *r)
 {
 	big_null(r);
-	register int n = big_get_lnt(a);
-	register int m = big_get_lnt(b);
+	register int n = big_get_len(a);
+	register int m = big_get_len(b);
 	register int g = n + m + 1, i, j;
 	register dig_t uv = 0ull, u = 0ull, *rp = r->value, *ap, *bp, *tbp;
 	
@@ -674,12 +648,12 @@ big_rand_8dig(big_t *r)
 	unsigned int rand_digit;
 
 	for (i = 0; i < 8; i++) {
-		__builtin_ia32_rdrand32_step(&rand_digit);
+		_rdseed32_step(&rand_digit);
 		key[i] = rand_digit;
 	}
 
 	for (i = 0; i < 3; i++) {
-		__builtin_ia32_rdrand32_step(&rand_digit);
+		_rdseed32_step(&rand_digit);
 		nounce[i] = rand_digit;
 	}
 
@@ -689,4 +663,48 @@ big_rand_8dig(big_t *r)
 		*(rp++) = (*out)[i] ^ (*out)[15 - i];
 	}
 
+}
+
+void
+big_mul_kat(big_t *a, big_t *b, big_t *r)
+{
+	big_null(r);
+
+	big_t x0, x1, y0, y1, t1, x0y0, x1y1, betaB, betaBmod, tmp;
+	bool asign = a->sign, bsign = b->sign;
+	a->sign = b->sign = false;
+	int n = big_get_len(a), m = big_get_len(b);
+	int g = (n > m) ? m : n;
+	g = g >> 1;
+
+	big_null(&betaB);
+	big_null(&betaBmod);
+	betaB.value[g] = 1ull;
+	memset(betaBmod.value, BIG_BASE_M, g * sizeof(dig_t));
+
+	big_and(a, &betaBmod, &x0);
+	big_and(b, &betaBmod, &y0);
+	big_rst_word(a, g, &x1);
+	big_rst_word(b, g, &y1);
+	// (2^32)^g == colocar 1 na posição g
+	big_mul(&x0, &y0, &x0y0);
+	big_mul(&x1, &y1, &x1y1);
+	big_sum(&x1, &x0, &t1);
+	big_sum(&y1, &y0, &x0);
+	big_cpy(&t1, &tmp);
+	big_mul(&x0, &tmp, &t1);
+
+	big_sum(&x0y0, &x1y1, &x0);
+	big_sub(&t1, &x0, &tmp);
+
+	big_lst_word(&tmp, g, &t1);
+	big_cpy(&x1y1, &tmp);
+	big_lst_word(&tmp, 2 * g, &x1y1);
+	big_cpy(&t1, &tmp);
+	big_sum(&tmp, &x0y0, &t1);
+
+	big_sum(&t1, &x1y1, r);
+	r->sign = asign ^ bsign;
+	a->sign = asign;
+	b->sign = bsign;
 }

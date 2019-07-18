@@ -103,7 +103,7 @@ print("%0f\n" % (end - start))
 
 print("AND")
 start = time()
-r = a & b
+r = (-0xd0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5) & (0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))
