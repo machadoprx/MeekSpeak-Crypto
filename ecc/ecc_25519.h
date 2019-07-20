@@ -3,7 +3,6 @@
 #define GX_25519 9ull
 #define GZ_25519 1ull
 #define GA_25519 486662ull
-#define ECP_INF  666ull
 
 typedef struct _ecp_t{
     big_t X, Z;
@@ -14,11 +13,21 @@ typedef struct _ec_t{
     big_t A;
 }ec_t;
 
-ecp_t*      ecp_new();
+#define ecp_new(P)  P = calloc(1, sizeof(ecp_t));
+
+#define ecp_null(P) memset(((ecp_t*)P)->X.value, 0, BIG_WORDS_SIZE);  \
+                    memset(((ecp_t*)P)->Z.value, 0, BIG_WORDS_SIZE);  \
+                    ((ecp_t*)P)->X.sign = false;                      \
+                    ((ecp_t*)P)->Z.sign = false;
+
+#define ecp_cpy(P, R)   memcpy(((ecp_t*)R)->X.value, ((ecp_t*)P)->X.value, BIG_WORDS_SIZE); \
+                        memcpy(((ecp_t*)R)->Z.value, ((ecp_t*)P)->Z.value, BIG_WORDS_SIZE); \
+                        ((ecp_t*)R)->X.sign = ((ecp_t*)P)->X.sign;                          \
+                        ((ecp_t*)R)->Z.sign = ((ecp_t*)P)->Z.sign;
+
 ec_t*       ec_init_c25519();
-void        ecp_null(ecp_t *);
 
 void        ecp_add(ec_t *, ecp_t *, ecp_t *, big_t *, ecp_t *);
-void        ecp_double(ec_t *, ecp_t *, big_t *, ecp_t *);
+void        ecp_dbl(ec_t *, ecp_t *, big_t *, ecp_t *);
 void        ecp_mul(ec_t *, ecp_t *, big_t *, big_t *, ecp_t *);
-void        ecp_get_affine(ecp_t *, big_t *, big_t *);
+void        ecp_get_afn(ecp_t *, big_t *, big_t *);
