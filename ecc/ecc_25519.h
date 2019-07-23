@@ -1,3 +1,5 @@
+#ifndef ECC_25519_H
+#define ECC_25519_H
 #include "../bn/bn.h"
 
 #define GX_25519 9ull
@@ -25,9 +27,16 @@ typedef struct _ec_t{
                         ((ecp_t*)R)->X.sign = ((ecp_t*)P)->X.sign;                          \
                         ((ecp_t*)R)->Z.sign = ((ecp_t*)P)->Z.sign;
 
-ec_t*       ec_init_c25519();
+#define ec_init_c25519(curve)   curve = malloc(sizeof(ec_t));       \
+                                big_null(&curve->A);                \
+                                ecp_new(curve->G);                  \
+                                *(curve->G->X.value) = GX_25519;    \
+                                *(curve->G->Z.value) = GZ_25519;    \
+                                *(curve->A.value) = GA_25519;
 
-void        ecp_add(ec_t *, ecp_t *, ecp_t *, big_t *, ecp_t *);
-void        ecp_dbl(ec_t *, ecp_t *, big_t *, ecp_t *);
-void        ecp_mul(ec_t *, ecp_t *, big_t *, big_t *, ecp_t *);
-void        ecp_get_afn(ecp_t *, big_t *, big_t *);
+void    ecp_add     (ec_t *, ecp_t *, ecp_t *, big_t *, ecp_t *);
+void    ecp_dbl     (ec_t *, ecp_t *, big_t *, ecp_t *);
+void    ecp_mul     (ec_t *, ecp_t *, big_t *, big_t *, ecp_t *);
+void    ecp_mul_cst     (ec_t *, ecp_t *, big_t *, big_t *, ecp_t *);
+void    ecp_get_afn (ecp_t *, big_t *, big_t *);
+#endif

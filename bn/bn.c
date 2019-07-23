@@ -16,9 +16,9 @@ big_get_len(big_t *a)
 dig_t*
 big_to_bin(big_t *a, int *lenght)
 {
+	int k = big_get_len(a);	
 	dig_t *bin = malloc(512 * sizeof(dig_t));
 	dig_t *p = bin;
-	int k = big_get_len(a);	
 	dig_t *ap = a->value + k, t = *(ap), mask = 0x80000000ull;
 	memset(bin, 0, 512 * sizeof(dig_t));
 	int mswbits = 0;
@@ -34,7 +34,7 @@ big_to_bin(big_t *a, int *lenght)
 
 	for (; ap >= a->value; ap--) {
 		while (mask != 0ull) {
-			*p++ = (mask & (*ap));
+			*(p++) = (dig_t)((mask & (*ap)) / mask);
 			mask = mask >> 1;
 		}
 		mask = 0x80000000ull;
@@ -81,7 +81,7 @@ big_gth_uns(big_t *a, big_t *b)
     dig_t *bp = b->value + n;
 	int i = n;
 
-	while (i > 0 && (*ap == *bp)) {
+	while (i > 0 && (*ap == *bp)) { // todo: constant time compare
 		ap--; bp--; i--;
 	}
 
@@ -183,12 +183,12 @@ big_mnt_pow_25519(big_t *a, big_t *b, big_t *r)
 	big_t xn, t, p, A, beta, R, Rm;
 
 	uint64_t BETA_25519[] 	= {
-							0xD79435E5ull, 0x79435E50ull, 0x9435E50Dull, 0x435E50D7ull, 
-							0x35E50D79ull, 0x5E50D794ull, 0xE50D7943ull, 0xD0D79435ull
+								0xD79435E5ull, 0x79435E50ull, 0x9435E50Dull, 0x435E50D7ull, 
+								0x35E50D79ull, 0x5E50D794ull, 0xE50D7943ull, 0xD0D79435ull
 	};
 	uint64_t RM_25519[] 	= {
-							0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 
-							0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull
+								0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 
+								0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull
 	};
 
 	big_null(&beta);
@@ -330,8 +330,9 @@ void
 big_sqr(big_t *a, big_t *r)
 {
 	big_null(r);
+	
 	int n = big_get_len(a);
-	twodig_t uv;
+	dig_t uv;
 	dig_t *tmpt, *ap = a->value, *rp = r->value, *tmpap, tmpx, u, *stop = (a->value + n);
 
 	for (; ap <= stop; ap++, rp += 2) {
@@ -566,6 +567,44 @@ big_mul(big_t *a, big_t *b, big_t *r)
 }
 
 void
+big_mod_1305(big_t *a, big_t *p, big_t *r)
+{
+	big_null(r);
+
+	big_t t1, t2, t3, tmpq, tmpk, pn;
+	
+	big_null(&tmpk);
+	big_cpy(p, &pn);
+	big_cpy(a, r);
+	r->sign = false;
+	*(tmpk.value) = 5;
+	*(pn.value) = BIG_BASE_M;
+
+	while (big_gth_uns(r, p) > BIG_LESS) {
+
+		big_rst_wrd(r, 4, &t1);
+		big_rst(&t1, &tmpq);
+		big_rst(&tmpq, &t1);
+		big_cpy(&t1, &tmpq);
+
+		big_and(r, &pn, &t1);
+		big_mul(&tmpq, &tmpk, &t2);
+		big_sum(&t1, &t2, r);
+		
+		if (big_gth_uns(r, p) > BIG_LESS) {
+			
+			big_sub(r, p, &t3);
+			big_cpy(&t3, r);
+		}
+	}
+
+	if (a->sign == true) {
+		big_cpy(r, &t1);
+		big_sub(p, &t1, r);
+	}
+}
+
+void
 big_mod_25519(big_t *a, big_t *p, big_t *r)
 {
 	big_null(r);
@@ -577,7 +616,7 @@ big_mod_25519(big_t *a, big_t *p, big_t *r)
 	big_cpy(p, &pn);
 	big_cpy(a, r);
 	r->sign = false;
-	*(tmpk.value) = K_25519;
+	*(tmpk.value) = 19;
 	*(pn.value) = BIG_BASE_M;
 
 	while (big_gth_uns(r, p) > BIG_LESS) {
@@ -681,7 +720,7 @@ big_rnd_dig(big_t *r)
 		nounce[i] = rand_digit;
 	}
 
-	chacha_enc(key, nounce, 0, 1, 8, out);	
+	chacha_enc(key, nounce, 1, 1, 8, out);	
 
 	for (i = 0; i < 8; i++) {
 		*(rp++) = (*out)[i] ^ (*out)[15 - i];
@@ -731,4 +770,28 @@ big_mul_kts(big_t *a, big_t *b, big_t *r)
 	r->sign = asign ^ bsign;
 	a->sign = asign;
 	b->sign = bsign;
+}
+
+void
+big_sum_25519(big_t *a, big_t *b, big_t *p, big_t *r)
+{
+	big_t t1;
+	big_sum(a, b, &t1);
+	big_mod_25519(&t1, p, r);
+}
+
+void
+big_sub_25519(big_t *a, big_t *b, big_t *p, big_t *r)
+{
+	big_t t1;	
+	big_sub(a, b, &t1);
+	big_mod_25519(&t1, p, r);
+}
+
+void
+big_mul_25519(big_t *a, big_t *b, big_t *p, big_t *r)
+{
+	big_t t1;	
+	big_mul(a, b, &t1);
+	big_mod_25519(&t1, p, r);
 }

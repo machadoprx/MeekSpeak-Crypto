@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BN_H
+#define BN_H
 
 #include <stdio.h>
 #include <string.h>
@@ -8,9 +9,11 @@
 #include <immintrin.h>
 #include "../hash/hash.h"
 
-// Values for Curve25519
+// Values for Curve25519 and Poly1305
 static const uint64_t P25519[]	= {0xFFFFFFEDull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0x7FFFFFFFull};
 static const uint64_t N25519[]	= {0x5CF5D3EDull, 0x5812631Aull, 0xA2F79CD6ull, 0x14DEF9DEull, 0ull, 0ull, 0ull, 0x10000000ull};
+static const uint64_t P1305[] = {0xfffffffbull, 0xffffffffull, 0xffffffffull, 0xffffffffull, 0x3ull};
+static const uint64_t C1305[] = {0x0fffffff, 0x0ffffffc, 0x0ffffffc, 0x0ffffffc};
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
@@ -21,12 +24,11 @@ static const uint64_t N25519[]	= {0x5CF5D3EDull, 0x5812631Aull, 0xA2F79CD6ull, 0
 #define BIG_LESS 			0
 #define BIG_EQUAL 			1
 #define BIG_GREATER 		2
-#define K_25519				19ull
 #define EVEN(a)				(!(*(a.value) & 1ull))
 
 // Big Integer structure and init functions
-#define twodig_t 			unsigned __int128
-#define dig_t				uint64_t
+typedef unsigned __int128 	twodig_t;
+typedef uint64_t 			dig_t;
 
 typedef struct _big_t{
 	dig_t					value[BIG_MAX_DIGITS];
@@ -56,6 +58,10 @@ void 	big_rst				(big_t *, big_t *);
 void 	big_rst_wrd			(big_t *, int, big_t *);
 void 	big_lst_wrd			(big_t *, int, big_t *);
 void 	big_and				(big_t *, big_t *, big_t *);
+void	big_mod_1305		(big_t *, big_t *, big_t *);
+void	big_sum_25519		(big_t *, big_t *, big_t *, big_t *);
+void	big_sub_25519		(big_t *, big_t *, big_t *, big_t *);
+void	big_mul_25519		(big_t *, big_t *, big_t *, big_t *);
 
 // Utility functions (Compare, primes...)
 int 	big_gth				(big_t *, big_t *);
@@ -68,3 +74,5 @@ void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
 int		big_get_len			(big_t *);
 void	big_rnd_dig			(big_t *);
+
+#endif

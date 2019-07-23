@@ -159,7 +159,8 @@ main(int argc, char const *argv[])
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
 
-	ec_t *curvetest = ec_init_c25519();
+	ec_t *curvetest;
+	ec_init_c25519(curvetest);
 	ecp_t *PR, *PR2, *PR3;
 	ecp_new(PR);
 	ecp_new(PR2);
@@ -187,31 +188,49 @@ main(int argc, char const *argv[])
 
 	printf("curve mult\n");
 	start = clock();
-	ecp_mul(curvetest, curvetest->G, l, p, PR3);
+	ecp_mul_cst(curvetest, curvetest->G, l, p, PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	ecp_get_afn(PR3, p, r);
 	big_to_hex(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
+	ecp_null(PR3);
 	big_null(r);
 
-	printf("rand 8 digits\n");
+	printf("radn num, curve mult and poly1305\n");
 	start = clock();
 	big_to_hex(np);
 	big_rnd_dig(r);
-	r->value[7] &= 0x7FFFFFFF;
 	while (big_gth_uns(r, np)) {
     	big_rnd_dig(r);
-		r->value[7] &= 0x7FFFFFFF;
 	}
+	ecp_mul_cst(curvetest, curvetest->G, r, p, PR3);
+	uint32_t nonce[3];
+	uint32_t msg[16];
+	uint32_t auth[5];
+	nonce[0] = (uint32_t)r->value[7];
+	nonce[1] = (uint32_t)r->value[5];
+	nonce[2] = (uint32_t)r->value[3];
+	ecp_get_afn(PR3, p, r);
+	big_to_hex(r);
+
+	uint32_t keykox[8];
+	for (int i = 0; i < 8; i++){
+		keykox[i] = (uint32_t)r->value[i];
+		msg[i] = (uint32_t)d->value[i];
+		msg[i + 8] = (uint32_t)d->value[i + 8];
+	}
+	poly1305_mac(keykox, nonce, msg, 64, auth);
+	big_null(r);
+	for (int i = 0; i < 5; i++){
+		r->value[i] = (dig_t)auth[i];
+	}
+	big_to_hex(r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(r);
-	big_null(r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
-
 	f_apply(void, free, PR, PR2, PR3, curvetest->G, curvetest, a, b, c, d, l, p, r);
 	
 	return 0;
