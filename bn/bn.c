@@ -33,7 +33,7 @@ big_to_bin(big_t *a, int *lenght)
 	}
 
 	for (; ap >= a->value; ap--) {
-		while (mask != 0ull) {
+		while (mask != 0ull) { //cst time?
 			*(p++) = (dig_t)((mask & (*ap)) / mask);
 			mask = mask >> 1;
 		}
@@ -64,31 +64,25 @@ big_gth(big_t *a, big_t *b)
 	if (a->sign == b->sign) {
 		return a->sign ? big_gth_uns(b, a) : big_gth_uns(a, b);
 	}
-	return a->sign ? 0 : 2;
+	else {
+		return a->sign ? -1 : 1;
+	}
 }
 
-int 
+int
 big_gth_uns(big_t *a, big_t *b)
 {
-	int n = big_get_len(a);
-	int m = big_get_len(b);
-	
-	if (n != m) {
-		return n > m ? 2 : 0;
-	}
-
+	int n = BIG_MAX_DIGITS - 1;
 	dig_t *ap = a->value + n;
-    dig_t *bp = b->value + n;
-	int i = n;
-
-	while (i > 0 && (*ap == *bp)) { // todo: constant time compare
-		ap--; bp--; i--;
+	dig_t *bp = b->value + n;
+	
+	while (n-- > 0 && (*ap == *bp)) { // todo: constant time compare
+		ap--; bp--;
 	}
-
-	return (*ap < *bp) ? 0 : (*ap == *bp) ? 1 : 2;
+	return (*ap - *bp) >> 1;
 }
 
-static inline void
+static void
 padd_str(char *str, char *dest, int padd)
 {
 	char *p = str + (strlen(str) - 1);
@@ -169,7 +163,7 @@ big_mnt(big_t *a, big_t *b, big_t *Rm, big_t *beta, big_t *r)
 	big_sum(a, r, &t1);
 	big_rst_wrd(&t1, 8, r);
 
-	if (big_gth_uns(r, b) > BIG_LESS) {
+	if (big_gth_uns(r, b) >= 0) {
 		big_sub(r, b, &t1);
 		big_cpy(&t1, r);
 	}
@@ -201,8 +195,8 @@ big_mnt_pow_25519(big_t *a, big_t *b, big_t *r)
 	memcpy(p.value, P25519, sizeof(dig_t) * 8);
 	memcpy(beta.value, BETA_25519, sizeof(dig_t) * 8);
 	memcpy(p.value, P25519, sizeof(dig_t) * 8);
-	R.value[8] = 1;
-	A.value[0] = 0x26;
+	R.value[8] = 0x01ull;
+	A.value[0] = 0x26ull;
 	beta.sign = true;
 
 	int b_lenght;
@@ -214,7 +208,7 @@ big_mnt_pow_25519(big_t *a, big_t *b, big_t *r)
 	while (b_lenght-- > 0) {
 		big_mul(&A, &A, &t);
 		big_mnt(&t, &p, &Rm, &beta, &A);
-		if (*(bit++) != 0) {
+		if (*(bit++) != 0) { // problem: side channel leak
 			big_mul(&A, &xn, &t);
 			big_mnt(&t, &p, &Rm, &beta, &A);
 		}
@@ -295,7 +289,7 @@ big_sub(big_t *a, big_t *b, big_t *r)
 	dig_t *gp, *lp, *rp = r->value, borrow = 0;
 	big_null(r);
 
-	if (big_gth_uns(a, b) > BIG_LESS) {
+	if (big_gth_uns(a, b) >= 0) {
 		gp = a->value;
 		lp = b->value;
 	}
@@ -501,7 +495,7 @@ big_mod(big_t *a, big_t *p, big_t *r)
 	big_cpy(a, r);
 
 	if (r->sign == false){
-		while (big_gth_uns(r, p) > 0) {
+		while (big_gth_uns(r, p) >= 0) {
 			big_sub(r, p, &t);
 			big_cpy(&t, r);
 		}
@@ -577,10 +571,10 @@ big_mod_1305(big_t *a, big_t *p, big_t *r)
 	big_cpy(p, &pn);
 	big_cpy(a, r);
 	r->sign = false;
-	*(tmpk.value) = 5;
+	*(tmpk.value) = 5ull;
 	*(pn.value) = BIG_BASE_M;
 
-	while (big_gth_uns(r, p) > BIG_LESS) {
+	while (big_gth_uns(r, p) >= 0) {
 
 		big_rst_wrd(r, 4, &t1);
 		big_rst(&t1, &tmpq);
@@ -591,7 +585,7 @@ big_mod_1305(big_t *a, big_t *p, big_t *r)
 		big_mul(&tmpq, &tmpk, &t2);
 		big_sum(&t1, &t2, r);
 		
-		if (big_gth_uns(r, p) > BIG_LESS) {
+		if (big_gth_uns(r, p) >= 0) {
 			
 			big_sub(r, p, &t3);
 			big_cpy(&t3, r);
@@ -616,28 +610,30 @@ big_mod_25519(big_t *a, big_t *p, big_t *r)
 	big_cpy(p, &pn);
 	big_cpy(a, r);
 	r->sign = false;
-	*(tmpk.value) = 19;
+	*(tmpk.value) = 19ull;
 	*(pn.value) = BIG_BASE_M;
 
-	while (big_gth_uns(r, p) > BIG_LESS) {
+	if (big_gth_uns(r, p) >= 0) {
+		do {
+			msb = (*r7) & 0x80000000ull; // b
+			big_rst_wrd(r, 8, &t1);
+			big_lst(&t1, &tmpq);
 
-		msb = (*r7) & 0x80000000ull; // b
-		big_rst_wrd(r, 8, &t1);
-		big_lst(&t1, &tmpq);
+			(*tmpq.value) = (*tmpq.value) | (msb >> 31);
 
-		(*tmpq.value) = (*tmpq.value) | (msb >> 31);
-
-		big_and(r, &pn, &t1);
-		big_mul(&tmpq, &tmpk, &t2);
-		big_sum(&t1, &t2, r);
-		
-		if (big_gth_uns(r, p) > BIG_LESS) {
+			big_and(r, &pn, &t1);
+			big_mul(&tmpq, &tmpk, &t2);
+			big_sum(&t1, &t2, r);
 			
-			big_sub(r, p, &t3);
-			big_cpy(&t3, r);
-		}
+			if (big_gth_uns(r, p) >= 0) {
+				
+				big_sub(r, p, &t3);
+				big_cpy(&t3, r);
+			}
+			else break;
+		} while (true);
 	}
-
+	
 	if (a->sign == true) {
 		big_cpy(r, &t1);
 		big_sub(p, &t1, r);
@@ -681,7 +677,7 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 			big_cpy(&t, &x2);
 		}
 
-		if (big_gth(&u, &v) > BIG_LESS) {
+		if (big_gth(&u, &v) >= 0) {
 			big_sub(&u, &v, &t);
 			big_cpy(&t, &u);
 			big_sub(&x1, &x2, &t);
@@ -708,7 +704,7 @@ big_rnd_dig(big_t *r)
 	int i;
 	dig_t *rp = r->value;
 	uint32_t key[8], nounce[3], out[1][16];
-	unsigned int rand_digit;
+	uint32_t rand_digit;
 
 	for (i = 0; i < 8; i++) {
 		_rdseed32_step(&rand_digit);
@@ -723,7 +719,7 @@ big_rnd_dig(big_t *r)
 	chacha_enc(key, nounce, 1, 1, 8, out);	
 
 	for (i = 0; i < 8; i++) {
-		*(rp++) = (*out)[i] ^ (*out)[15 - i];
+		*(rp++) = (dig_t)(*out)[15 - i];
 	}
 
 }
@@ -733,43 +729,45 @@ big_mul_kts(big_t *a, big_t *b, big_t *r)
 {
 	big_null(r);
 
-	big_t x0, x1, y0, y1, t1, x0y0, x1y1, betaB, betaBmod, tmp;
-	bool asign = a->sign, bsign = b->sign;
-	a->sign = b->sign = false;
+	big_t x0, x1, y0, y1, t1, t2, x0y0, x1y1, tmp;
+	int i;
 	int n = big_get_len(a), m = big_get_len(b);
 	int g = (n > m) ? m : n;
 	g = g >> 1;
 
-	big_null(&betaB);
-	big_null(&betaBmod);
-	betaB.value[g] = 1ull;
-	memset(betaBmod.value, BIG_BASE_M, g * sizeof(dig_t));
+	big_null(&x0);
+	big_null(&y0);
+	big_null(&x1);
+	big_null(&y1);
 
-	big_and(a, &betaBmod, &x0);
-	big_and(b, &betaBmod, &y0);
-	big_rst_wrd(a, g, &x1);
-	big_rst_wrd(b, g, &y1);
+	for (i = 0; i < g; i++) {
+		x0.value[i] = a->value[i] & BIG_BASE_M;
+		y0.value[i] = b->value[i] & BIG_BASE_M;
+	}
+	for (i = 0; i <= n - g; i++) {
+		x1.value[i] = a->value[i + g];
+	}
+	for (i = 0; i <= m - g; i++) {
+		y1.value[i] = b->value[i + g];
+	}
 
 	big_mul(&x0, &y0, &x0y0);
 	big_mul(&x1, &y1, &x1y1);
-	big_sum(&x1, &x0, &t1);
+
+	big_sum(&x1, &x0, &t2);
 	big_sum(&y1, &y0, &x0);
-	big_cpy(&t1, &tmp);
-	big_mul(&x0, &tmp, &t1);
+	big_mul(&x0, &t2, &t1);
 
 	big_sum(&x0y0, &x1y1, &x0);
 	big_sub(&t1, &x0, &tmp);
 
 	big_lst_wrd(&tmp, g, &t1);
-	big_cpy(&x1y1, &tmp);
-	big_lst_wrd(&tmp, 2 * g, &x1y1);
-	big_cpy(&t1, &tmp);
-	big_sum(&tmp, &x0y0, &t1);
+	big_lst_wrd(&x1y1, 2 * g, &t2);	
 
-	big_sum(&t1, &x1y1, r);
-	r->sign = asign ^ bsign;
-	a->sign = asign;
-	b->sign = bsign;
+	big_sum(&t1, &x0y0, &tmp);
+	big_sum(&tmp, &t2, r);
+	
+	r->sign = a->sign ^ b->sign;
 }
 
 void

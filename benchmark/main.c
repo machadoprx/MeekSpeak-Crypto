@@ -71,8 +71,11 @@ main(int argc, char const *argv[])
 	printf("\n");
 
 	printf("Power Mod\n");
+	big_t tst;
+	big_cpy(p, &tst);
+	tst.value[0] -= 2;
 	start = clock();
-	big_mnt_pow_25519(a, c, r);
+	big_mnt_pow_25519(a, &tst, r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	big_to_hex(r);
@@ -202,8 +205,10 @@ main(int argc, char const *argv[])
 	start = clock();
 	big_to_hex(np);
 	big_rnd_dig(r);
-	while (big_gth_uns(r, np)) {
+	r->value[7] &= 0x7FFFFFFFull;
+	while (big_gth_uns(r, np) > 0) {
     	big_rnd_dig(r);
+		r->value[7] &= 0x7FFFFFFFull;
 	}
 	ecp_mul_cst(curvetest, curvetest->G, r, p, PR3);
 	uint32_t nonce[3];
@@ -231,6 +236,7 @@ main(int argc, char const *argv[])
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
+
 	f_apply(void, free, PR, PR2, PR3, curvetest->G, curvetest, a, b, c, d, l, p, r);
 	
 	return 0;

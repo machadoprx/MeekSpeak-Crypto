@@ -52,7 +52,7 @@ chacha_enc(uint32_t key[], uint32_t nonce[], uint32_t counter, uint32_t blocks, 
     }
 }
 
-static inline void
+static void
 poly1305_keygen(uint32_t key[], uint32_t nonce[], uint32_t r[], uint32_t s[])
 {
     int i;
@@ -81,7 +81,7 @@ void
 poly1305_mac(uint32_t key[], uint32_t nonce[], uint32_t msg[], int msg_len, uint32_t auth[])
 {
     int i;
-    uint32_t kaux[8], raux[4], saux[4], naux[4];
+    uint32_t raux[4], saux[4], naux[4];
     big_t p, a, r, s, n, t1;
 
     big_null(&p);
@@ -89,11 +89,7 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint32_t msg[], int msg_len, uint
     big_null(&s);
     big_null(&a);
 
-    for (i = 0; i < 8; i++) {
-        kaux[i] = key[i];
-    }
-
-    poly1305_keygen(kaux, nonce, raux, saux);
+    poly1305_keygen(key, nonce, raux, saux);
     for (i = 0; i < 4; i++) {
         r.value[i] = raux[i];
         s.value[i] = saux[i];

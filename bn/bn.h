@@ -65,7 +65,7 @@ void	big_mul_25519		(big_t *, big_t *, big_t *, big_t *);
 
 // Utility functions (Compare, primes...)
 int 	big_gth				(big_t *, big_t *);
-int 	big_gth_uns			(big_t *, big_t *);
+int		big_gth_uns			(big_t *, big_t *);
 int 	big_lgd_sym			(big_t *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);

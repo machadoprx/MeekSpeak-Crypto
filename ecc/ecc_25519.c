@@ -42,7 +42,7 @@ ecp_dbl(ec_t *curve, ecp_t *P, big_t *p, ecp_t *R)
     big_mul_25519(&t3, &t2, p, &R->Z);
 }
 
-static inline void
+static void
 cst_swap(int swap, big_t* a, big_t *b)
 {
     dig_t dummy, mask = ~swap + 1;
@@ -106,6 +106,7 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     cst_swap(swap, &z2, &z3);
     big_cpy(&x2, &R->X);
     big_cpy(&z2, &R->Z);
+    free(kbits);
 }
 
 void
