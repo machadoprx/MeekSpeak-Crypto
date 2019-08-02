@@ -89,7 +89,7 @@ padd_str(char *str, char *dest, int padd)
 	char *m = dest + padd - 1;
 	memset(dest, '0', sizeof(char) * padd);
 
-	while (*p) {
+	while (*p != 0) {
 		*m-- = *p--;
 	}
 }
@@ -520,7 +520,8 @@ big_mul(big_t *a, big_t *b, big_t *r)
 	
 	if (n < m) {
 		int t = n;
-		n = m; m = t;
+		n = m;
+		m = t;
 	}
 
 	bp = b->value;
@@ -576,20 +577,17 @@ big_mod_1305(big_t *a, big_t *p, big_t *r)
 
 	while (big_gth_uns(r, p) >= 0) {
 
-		big_rst_wrd(r, 4, &t1);
+		big_sub(r, p, &t3);
+
+		big_rst_wrd(&t3, 4, &t1);
 		big_rst(&t1, &tmpq);
 		big_rst(&tmpq, &t1);
 		big_cpy(&t1, &tmpq);
 
-		big_and(r, &pn, &t1);
+		big_and(&t3, &pn, &t1);
 		big_mul(&tmpq, &tmpk, &t2);
 		big_sum(&t1, &t2, r);
 		
-		if (big_gth_uns(r, p) >= 0) {
-			
-			big_sub(r, p, &t3);
-			big_cpy(&t3, r);
-		}
 	}
 
 	if (a->sign == true) {
@@ -604,7 +602,7 @@ big_mod_25519(big_t *a, big_t *p, big_t *r)
 	big_null(r);
 
 	big_t t1, t2, t3, tmpq, tmpk, pn;
-	dig_t msb, *r7 = r->value + 7;
+	dig_t msb, *r7 = t3.value + 7;
 	
 	big_null(&tmpk);
 	big_cpy(p, &pn);
@@ -613,25 +611,19 @@ big_mod_25519(big_t *a, big_t *p, big_t *r)
 	*(tmpk.value) = 19ull;
 	*(pn.value) = BIG_BASE_M;
 
-	if (big_gth_uns(r, p) >= 0) {
-		do {
-			msb = (*r7) & 0x80000000ull; // b
-			big_rst_wrd(r, 8, &t1);
-			big_lst(&t1, &tmpq);
+	while (big_gth_uns(r, p) >= 0) {
+		
+		big_sub(r, p, &t3);
+		
+		msb = (*r7) & 0x80000000ull; // b
+		big_rst_wrd(&t3, 8, &t1);
+		big_lst(&t1, &tmpq);
 
-			(*tmpq.value) = (*tmpq.value) | (msb >> 31);
+		(*tmpq.value) = (*tmpq.value) | (msb >> 31);
 
-			big_and(r, &pn, &t1);
-			big_mul(&tmpq, &tmpk, &t2);
-			big_sum(&t1, &t2, r);
-			
-			if (big_gth_uns(r, p) >= 0) {
-				
-				big_sub(r, p, &t3);
-				big_cpy(&t3, r);
-			}
-			else break;
-		} while (true);
+		big_and(&t3, &pn, &t1);
+		big_mul(&tmpq, &tmpk, &t2);
+		big_sum(&t1, &t2, r);
 	}
 	
 	if (a->sign == true) {
