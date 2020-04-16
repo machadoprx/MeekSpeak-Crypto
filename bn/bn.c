@@ -695,23 +695,11 @@ big_rnd_dig(big_t *r)
 	
 	int i;
 	dig_t *rp = r->value;
-	uint32_t key[8], nounce[3], out[1][16];
 	uint32_t rand_digit;
 
 	for (i = 0; i < 8; i++) {
 		_rdseed32_step(&rand_digit);
-		key[i] = rand_digit;
-	}
-
-	for (i = 0; i < 3; i++) {
-		_rdseed32_step(&rand_digit);
-		nounce[i] = rand_digit;
-	}
-
-	chacha_enc(key, nounce, 1, 1, 8, out);	
-
-	for (i = 0; i < 8; i++) {
-		*(rp++) = (dig_t)(*out)[15 - i];
+		*(rp++) = rand_digit;
 	}
 
 }

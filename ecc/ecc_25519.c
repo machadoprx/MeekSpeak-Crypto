@@ -19,7 +19,7 @@ ecp_add(ec_t *curve, ecp_t *P, ecp_t *Q, big_t *p, ecp_t *R)
     big_mul_25519(&t1, &t1, p, &t2);
     big_sum_25519(&t2, &t2, p, &t3);
     big_sum_25519(&t3, &t3, p, &t1);
-    big_mul_25519(&t1, &curve->G->X, p, &R->Z);
+    big_mul_25519(&t1, &curve->G.X, p, &R->Z);
 }
 
 void

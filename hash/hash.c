@@ -1,57 +1,78 @@
 #include "hash.h"
 
-void 
-chacha_block(uint32_t in[], int rounds, uint32_t out[])
+static inline void 
+chacha_block(uint32_t state[])
 {
-	int i, end = rounds >> 1;
 	uint32_t old[16];
 
-    memcpy(old, in, sizeof(uint32_t) * 16);
+    memcpy(old, state, sizeof(uint32_t) * 16);
 
-	for (i = 0; i < end; i++) {
-		QR(in[0], in[4], in[8 ], in[12]); 
-		QR(in[1], in[5], in[9 ], in[13]); 
-		QR(in[2], in[6], in[10], in[14]); 
-		QR(in[3], in[7], in[11], in[15]); 
-		QR(in[0], in[5], in[10], in[15]);
-		QR(in[1], in[6], in[11], in[12]);
-		QR(in[2], in[7], in[8 ], in[13]);
-		QR(in[3], in[4], in[9 ], in[14]);
+	for (int i = 0; i < ROUNDS; i++) {
+		QR(old[0], old[4], old[8 ], old[12]); 
+		QR(old[1], old[5], old[9 ], old[13]); 
+		QR(old[2], old[6], old[10], old[14]); 
+		QR(old[3], old[7], old[11], old[15]); 
+		QR(old[0], old[5], old[10], old[15]);
+		QR(old[1], old[6], old[11], old[12]);
+		QR(old[2], old[7], old[8 ], old[13]);
+		QR(old[3], old[4], old[9 ], old[14]);
 	}
 
-	for (i = 0; i < 16; ++i) {
-        out[i] = in[i] + old[i];
+	for (int i = 0; i < 16; ++i) {
+        state[i] += old[i];
+    }
+}
+
+static inline void 
+make_state(uint32_t state[], uint32_t key[], uint32_t counter, uint32_t nonce[])
+{
+    state[0] = 0xfa835867;
+    state[1] = 0x2086ca69;
+    state[2] = 0x1467c0fb;
+    state[3] = 0x638e2b99;
+    state[4] = key[0];
+    state[5] = key[1];
+    state[6] = key[2];
+    state[7] = key[3];
+    state[8] = key[4];
+    state[9] = key[5];
+    state[10] = key[6];
+    state[11] = key[7];
+    state[12] = counter;
+    state[13] = nonce[0];
+    state[14] = nonce[1];
+    state[15] = nonce[2];
+}
+
+static inline void
+serialize(uint32_t state[16], uint8_t stream[64])
+{
+    for (int i = 0; i < 16; i++) {
+        for (int j = 0; j < 4; j++) {
+            int stream_index = (15 - i) * 4 + (3 - j);
+            stream[stream_index] = (uint8_t)((state[i] >> (j * 8)) & 0xFF);
+        }
     }
 }
 
 void
-chacha_enc(uint32_t key[], uint32_t nonce[], uint32_t counter, uint32_t blocks, int rounds, uint32_t out[][16])
+chacha_enc(uint32_t key[], uint32_t nonce[], uint32_t counter, uint8_t *plain, uint8_t *cipher, int len)
 {
-    uint32_t inp_block[16];
+    int range = (int)(len / 64) - 1;
+    for (int j = 0; j < range; j++) {
+        uint32_t state[16];
+        uint8_t key_stream[64];
+        make_state(state, key, counter + j, nonce);
+        chacha_block(state);
+        serialize(state, key_stream);
 
-    inp_block[0] = 0xfa835867;
-    inp_block[1] = 0x2086ca69;
-    inp_block[2] = 0x1467c0fb;
-    inp_block[3] = 0x638e2b99;
-    inp_block[4] = key[0];
-    inp_block[5] = key[1];
-    inp_block[6] = key[2];
-    inp_block[7] = key[3];
-    inp_block[8] = key[4];
-    inp_block[9] = key[5];
-    inp_block[10] = key[6];
-    inp_block[11] = key[7];
-    inp_block[12] = counter;
-    inp_block[13] = nonce[0];
-    inp_block[14] = nonce[1];
-    inp_block[15] = nonce[2];
-    
-    for (int i = 0; i < blocks; i++) {
-        chacha_block(inp_block, rounds, out[i]);
-        inp_block[12]++;
+        int index = j * 64;
+        for (int i = 0; i < 64; i++) {
+            cipher[index + i] = plain[index + i] ^ key_stream[i]; 
+        }
     }
 }
-
+/*
 static void
 poly1305_keygen(uint32_t key[], uint32_t nonce[], uint32_t r[], uint32_t s[])
 {
@@ -112,4 +133,4 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint32_t msg[], int msg_len, uint
     for (i = 0; i < 5; i++) {
         auth[i] = (uint32_t)t1.value[i];
     }
-}
+}*/
