@@ -1,6 +1,6 @@
 #include "hash.h"
 
-static inline void 
+void 
 chacha_block(uint32_t state[])
 {
 	uint32_t old[16];

@@ -457,6 +457,26 @@ big_to_hex(big_t *a)
 }
 
 void
+big_to_str(big_t *a, char str[65])
+{
+	memset(str, 0, 65);
+
+	int n = big_get_len(a);
+	dig_t *ap = a->value + n;
+	char *ptr = str;
+	char buffer[9];
+
+	for (; ap >= a->value; --ap) {
+		memset(buffer, 0, 9);
+		*ap > 0xFFFFFFFu ? snprintf(buffer, 9, "%x", *ap) : snprintf(buffer, 9, "%08x", *ap);
+		for (int i = 0; i < 8; i++) {
+			*(ptr++) = buffer[i];
+		}
+	}
+	str[64] = '\0';
+}
+
+void
 big_mod(big_t *a, big_t *p, big_t *r)
 {
 	big_t t;
@@ -659,16 +679,16 @@ void
 big_rnd_dig(big_t *r)
 {
 	big_null(r);
-	
-	int i;
-	dig_t *rp = r->value;
+	uint32_t random[16];
 	uint32_t rand_digit;
-
-	for (i = 0; i < 8; i++) {
+	for (int i = 0; i < 16; i++) {
 		_rdseed32_step(&rand_digit);
-		*(rp++) = rand_digit;
+		random[i] = rand_digit;
 	}
-
+	chacha_block(random);
+	for (int i = 0; i < 8; i++) {
+		r->value[i] = random[i];
+	}
 }
 
 void

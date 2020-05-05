@@ -69,9 +69,9 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     big_null(&x2);
     big_null(&z2);
     big_null(&z3);
-    (*a24.value) = 121665ull;
-    (*x2.value) = 0x01ull;
-    (*z3.value) = 0x01ull;
+    (*a24.value) = 121665u;
+    (*x2.value) = 0x01u;
+    (*z3.value) = 0x01u;
 
     for (int i = bit_len; i > 0; i--, bit++) {
         

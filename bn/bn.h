@@ -73,5 +73,6 @@ void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
 int		big_get_len			(big_t *);
 void	big_rnd_dig			(big_t *);
+void	big_to_str			(big_t *a, char *str);
 
 #endif
