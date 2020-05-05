@@ -13,14 +13,14 @@ big_get_len(big_t *a)
 	return k;
 }
 
-dig_t*
-big_to_bin(big_t *a, int *lenght)
+void
+big_to_bin(big_t *a, int *lenght, uint8_t bin[512])
 {
 	int k = big_get_len(a);	
-	dig_t *bin = (dig_t*)malloc(512 * sizeof(dig_t));
-	dig_t *p = bin;
+
+	uint8_t *p = bin;
 	dig_t *ap = a->value + k, t = *(ap), mask = 0x80000000u;
-	memset(bin, 0, 512 * sizeof(dig_t));
+	memset(bin, 0, 512 * sizeof(uint8_t));
 	int mswbits = 0;
 
 	while (t > 0) {
@@ -34,15 +34,13 @@ big_to_bin(big_t *a, int *lenght)
 
 	for (; ap >= a->value; ap--) {
 		while (mask != 0u) { //cst time?
-			*(p++) = (dig_t)((mask & (*ap)) / mask);
+			*(p++) = (uint8_t)((mask & (*ap)) / mask);
 			mask = mask >> 1;
 		}
 		mask = 0x80000000u;
 	}
 
 	*lenght = mswbits + (k * BIG_DIGIT_BITS);
-
-	return bin;
 }
 
 dig_t
@@ -208,22 +206,22 @@ big_mnt_pow_25519(big_t *a, big_t *b, big_t *r)
 	beta.sign = true;
 
 	int b_lenght;
-	dig_t *bin_b = big_to_bin(b, &b_lenght);
-	dig_t *bit = bin_b;
+	uint8_t bin_b[512];
+	big_to_bin(b, &b_lenght, bin_b);
+	uint8_t *bit = bin_b;
 	big_mul(a, &R, &t);
 	big_mod_25519(&t, &p, &xn); 
 
 	while (b_lenght-- > 0) {
 		big_mul(&A, &A, &t);
 		big_mnt(&t, &p, &Rm, &beta, &A);
-		if (*(bit++) != 0) { // problem: side channel leak
+		if (*(bit++) == 1) { // problem: side channel leak
 			big_mul(&A, &xn, &t);
 			big_mnt(&t, &p, &Rm, &beta, &A);
 		}
 	}
 
 	big_mnt(&A, &p, &Rm, &beta, r);
-	free(bin_b);
 }
 
 void

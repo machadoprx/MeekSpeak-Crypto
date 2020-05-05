@@ -68,7 +68,7 @@ int		big_gth_uns			(big_t *, big_t *);
 int 	big_lgd_sym			(big_t *, big_t *);
 bool 	big_eql				(big_t *, big_t *);
 void 	big_to_hex			(big_t *);
-dig_t*	big_to_bin			(big_t *, int *);
+void	big_to_bin			(big_t *, int *, uint8_t*);
 void 	bin_to_big			(char *, big_t *);
 void	hex_to_big			(char *, big_t *);
 int		big_get_len			(big_t *);

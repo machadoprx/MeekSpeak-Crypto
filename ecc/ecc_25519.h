@@ -2,9 +2,9 @@
 #define ECC_25519_H
 #include "../bn/bn.h"
 
-#define GX_25519 9ull
-#define GZ_25519 1ull
-#define GA_25519 486662ull
+#define GX_25519 9u
+#define GZ_25519 1u
+#define GA_25519 486662u
 
 typedef struct _ecp_t{
     big_t X, Z;

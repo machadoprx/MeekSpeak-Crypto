@@ -60,8 +60,9 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     int bit_len;
     big_t x1, x2, z2, x3, z3, a24;
     dig_t swap = 0;
-    dig_t *kbits = big_to_bin(k, &bit_len);
-    dig_t *bit = kbits;
+    uint8_t kbits[512];
+    big_to_bin(k, &bit_len, kbits);
+    uint8_t *bit = kbits;
     
     big_cpy(&P->X, &x1);
     big_cpy(&P->X, &x3);
@@ -75,10 +76,10 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
 
     for (int i = bit_len; i > 0; i--, bit++) {
         
-        swap ^= *bit;
+        swap ^= (uint32_t)*bit;
         cst_swap(swap, &x2, &x3);
         cst_swap(swap, &z2, &z3);
-        swap = *bit;
+        swap = (uint32_t)*bit;
 
         big_t A, AA, B, BB, C, D, E, DA, CB, t1, t2;
         big_sum_25519(&x2, &z2, p, &A);
@@ -105,7 +106,6 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     cst_swap(swap, &z2, &z3);
     big_cpy(&x2, &R->X);
     big_cpy(&z2, &R->Z);
-    free(kbits);
 }
 
 void
@@ -115,9 +115,9 @@ ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     // no sanity check for k == 0 / do it in call
     int bit_len;
     ecp_t R0, R1, t1;
-    
-    dig_t *kbits = big_to_bin(k, &bit_len);
-    dig_t *bit = kbits + 1;
+    uint8_t kbits[512];
+    big_to_bin(k, &bit_len, kbits);
+    uint8_t *bit = kbits + 1;
 
     ecp_cpy(P, &R1); // manual first op
     ecp_cpy(&R1, &R0);
@@ -141,7 +141,6 @@ ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     }
 
     ecp_cpy(&R0, R);
-    free(kbits);
 }
 
 void
