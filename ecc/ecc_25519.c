@@ -28,9 +28,8 @@ ecp_dbl(ec_t *curve, ecp_t *P, big_t *p, ecp_t *R)
     ecp_null(R);
 
     big_t t1, t2, t3, x2, z2, xz;
-    
     big_mul_25519(&P->X, &P->X, p, &x2);
-    big_mul_25519(&P->Z, &P->Z, p, &z2);;
+    big_mul_25519(&P->Z, &P->Z, p, &z2);
     big_sub_25519(&x2, &z2, p, &t1);
     big_mul_25519(&t1, &t1, p, &R->X);
     big_mul_25519(&P->X, &P->Z, p, &xz);

@@ -10,25 +10,25 @@
 #include "../hash/hash.h"
 
 // Values for Curve25519 and Poly1305
-static const uint64_t P25519[]	= {0xFFFFFFEDull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0xFFFFFFFFull, 0x7FFFFFFFull};
-static const uint64_t N25519[]	= {0x5CF5D3EDull, 0x5812631Aull, 0xA2F79CD6ull, 0x14DEF9DEull, 0ull, 0ull, 0ull, 0x10000000ull};
-static const uint64_t P1305[] = {0xfffffffbull, 0xffffffffull, 0xffffffffull, 0xffffffffull, 0x3ull};
-static const uint64_t C1305[] = {0x0fffffff, 0x0ffffffc, 0x0ffffffc, 0x0ffffffc};
+static const uint32_t P25519[]	= {0xFFFFFFEDu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu};
+static const uint32_t N25519[]	= {0x5CF5D3EDu, 0x5812631Au, 0xA2F79CD6u, 0x14DEF9DEu, 0u, 0u, 0u, 0x10000000u};
+static const uint32_t P1305[] = {0xfffffffbu, 0xffffffffu, 0xffffffffu, 0xffffffffu, 0x3u};
+static const uint32_t C1305[] = {0x0fffffff, 0x0ffffffc, 0x0ffffffc, 0x0ffffffc};
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
 #define BIG_WORDS_SIZE		BIG_MAX_DIGITS * sizeof(dig_t)
-#define BIG_BASE 			0x100000000ull
-#define BIG_BASE_M			0xFFFFFFFFull
+#define BIG_BASE 			0x100000000u
+#define BIG_BASE_M			0xFFFFFFFFu
 #define BIG_DIGIT_BITS		32
 #define BIG_LESS 			0
 #define BIG_EQUAL 			1
 #define BIG_GREATER 		2
-#define EVEN(a)				(!(*(a.value) & 1ull))
+#define EVEN(a)				(!(*(a.value) & 1u))
 
 // Big Integer structure and init functions
-typedef unsigned __int128 	twodig_t;
-typedef uint64_t 			dig_t;
+typedef uint64_t 			twodig_t;
+typedef uint32_t 			dig_t;
 
 typedef struct _big_t{
 	dig_t					value[BIG_MAX_DIGITS];
@@ -46,7 +46,6 @@ typedef struct _big_t{
 // Logic and arithmetic operations functions
 void 	big_mul				(big_t *, big_t *, big_t *);
 void	big_mul_kts			(big_t *, big_t *, big_t *);
-void	big_sqr				(big_t *, big_t *);
 void 	big_sub				(big_t *, big_t *, big_t *);
 void 	big_sum				(big_t *, big_t *, big_t *);
 void	big_mnt_pow_25519	(big_t *, big_t *, big_t *);
