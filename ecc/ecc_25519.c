@@ -44,7 +44,7 @@ ecp_dbl(ec_t *curve, ecp_t *P, big_t *p, ecp_t *R)
 static void
 cst_swap(int swap, big_t* a, big_t *b)
 {
-    dig_t dummy, mask = ~swap + 1;
+    uint32_t dummy, mask = ~swap + 1;
     for (int i = 0; i < 8; i++) {
         dummy = mask & (a->value[i] ^ b->value[i]);
         a->value[i] ^= dummy;
@@ -59,7 +59,7 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
 
     int bit_len;
     big_t x1, x2, z2, x3, z3, a24;
-    dig_t swap = 0;
+    uint32_t swap = 0;
     uint8_t kbits[512];
     big_to_bin(k, &bit_len, kbits);
     uint8_t *bit = kbits;

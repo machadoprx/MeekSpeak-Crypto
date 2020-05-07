@@ -17,7 +17,7 @@ static const uint32_t C1305[] = {0x0fffffff, 0x0ffffffc, 0x0ffffffc, 0x0ffffffc}
 
 // Macros for organization
 #define BIG_MAX_DIGITS		16
-#define BIG_WORDS_SIZE		BIG_MAX_DIGITS * sizeof(dig_t)
+#define BIG_WORDS_SIZE		BIG_MAX_DIGITS * sizeof(uint32_t)
 #define BIG_BASE 			0x100000000u
 #define BIG_BASE_M			0xFFFFFFFFu
 #define BIG_DIGIT_BITS		32
@@ -26,12 +26,8 @@ static const uint32_t C1305[] = {0x0fffffff, 0x0ffffffc, 0x0ffffffc, 0x0ffffffc}
 #define BIG_GREATER 		2
 #define EVEN(a)				(!(*(a.value) & 1u))
 
-// Big Integer structure and init functions
-typedef uint64_t 			twodig_t;
-typedef uint32_t 			dig_t;
-
 typedef struct _big_t{
-	dig_t					value[BIG_MAX_DIGITS];
+	uint32_t				value[BIG_MAX_DIGITS];
 	bool 					sign;
 }big_t;
 

@@ -20,8 +20,8 @@ main(int argc, char const *argv[])
 	hex_to_big("9ac6241f", &c);
 	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faa002f53134d7bb030ed3bbcebcd28b466227cc87766421df596a50c58c21d04c88ebf9ed887b58bf7112dc", &d);
 	
-	memcpy(p.value, P25519, sizeof(dig_t) * 8);
-	memcpy(np.value, N25519, sizeof(dig_t) * 8);
+	memcpy(p.value, P25519, sizeof(uint32_t) * 8);
+	memcpy(np.value, N25519, sizeof(uint32_t) * 8);
 
 	printf("Mod\n");
 	start = clock();
