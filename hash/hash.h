@@ -2,6 +2,7 @@
 #define HASH_H
 
 #include "../bn/bn.h"
+#include <math.h>
 
 #define ROT_L32(x, n) x = (x << n) | (x >> (32 - n))
 #define QR(a, b, c, d)                 \
@@ -22,7 +23,7 @@
 
 #define ROUNDS 10
 
-void chacha_enc(uint32_t key[], uint32_t nonce[], uint8_t *plain, uint8_t *cipher, int len);
+void chacha_enc(uint32_t key[], uint32_t nonce[], uint8_t *plain, uint8_t *cipher, unsigned len);
 void chacha_block(uint32_t state[]);
 //void poly1305_mac   (uint32_t [], uint32_t [], uint32_t [], int, uint32_t []);
 

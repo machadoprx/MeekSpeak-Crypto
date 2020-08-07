@@ -45,18 +45,32 @@ make_state(uint32_t state[], uint32_t key[], uint32_t counter, uint32_t nonce[])
 }
 
 static inline void
-serialize(uint32_t state[16], uint8_t stream[64])
+serialize(uint32_t state[], uint8_t stream[], unsigned len)
 {
-    for (int i = 0; i < 16; i++) {
+    for (int i = 0; i < len; i++) {
         for (int j = 0; j < 4; j++) {
-            int stream_index = (15 - i) * 4 + (3 - j);
+            int stream_index = (len - 1 - i) * 4 + (3 - j);
             stream[stream_index] = (uint8_t)((state[i] >> (j * 8)) & 0xFF);
         }
     }
 }
 
+static inline void
+byte_to_array(uint8_t *stream, uint32_t *arr)
+{
+    for (int i = 0; i < 4; i++) {
+        uint32_t acc = 0;
+        uint32_t shift = 0;
+        for (int j = 3; j >= 0; j--) {
+            acc += (stream[i * 4 + j] << shift);
+            shift += 8;
+        }
+        arr[i] = acc;
+    }
+}
+
 void
-chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, int len)
+chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, unsigned len)
 {
     int range = (int)(len / 64) - 1;
     for (int j = 0; j < range; j++) {
@@ -64,7 +78,7 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
         uint8_t key_stream[64];
         make_state(state, key, j, nonce);
         chacha_block(state);
-        serialize(state, key_stream);
+        serialize(state, key_stream, 16);
 
         int index = j * 64;
         for (int i = 0; i < 64; i++) {
@@ -72,65 +86,42 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
         }
     }
 }
-/*
-static void
-poly1305_keygen(uint32_t key[], uint32_t nonce[], uint32_t r[], uint32_t s[])
-{
-    int i;
-    big_t rtmp, clamp, res;
-    uint32_t out[1][16];
-
-    big_null(&rtmp);
-    big_null(&clamp);
-    big_null(&res);
-    chacha_enc(key, nonce, 0, 1, 20, out);
-
-    for (i = 0; i < 4; i++) {
-        s[i] = (*out)[i + 8];
-        rtmp.value[i] = (dig_t)(*out)[i + 12];
-    }
-
-    memcpy(clamp.value, C1305, sizeof(dig_t) * 4);
-    big_and(&rtmp, &clamp, &res);
-
-    for (i = 0; i < 4; i++) {
-        r[i] = (uint32_t)res.value[i];
-    }
-}
 
 void
-poly1305_mac(uint32_t key[], uint32_t nonce[], uint32_t msg[], int msg_len, uint32_t auth[])
+poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *msg, unsigned msg_len, uint8_t *tag)
 {
-    int i;
-    uint32_t raux[4], saux[4], naux[4];
-    big_t p, a, r, s, n, t1;
+    unsigned i;
+    uint32_t poly_key[8];
+    big_t p, a, c, r, s, n, t1;
 
+    big_null(&c);
     big_null(&p);
-    big_null(&r);
     big_null(&s);
     big_null(&a);
 
-    poly1305_keygen(key, nonce, raux, saux);
-    for (i = 0; i < 4; i++) {
-        r.value[i] = raux[i];
-        s.value[i] = saux[i];
-    }
-    memcpy(p.value, P1305, sizeof(dig_t) * 5);
+    make_state(poly_key, key, 0, nonce);
+    chacha_block(poly_key);
 
-    for (i = 0; i < (msg_len >> 4); i++) {
+    memcpy(c.value, poly_key, sizeof(uint32_t) * 4);
+    memcpy(s.value, poly_key + 4, sizeof(uint32_t) * 4);
+    memcpy(p.value, P1305, sizeof(uint32_t) * 5);
+
+    big_t clamp;
+    hex_to_big("0ffffffc0ffffffc0ffffffc0fffffff", &clamp);
+    big_and(&c, &clamp, &r);
+
+    for (i = 1; i <= (unsigned)ceil(msg_len / 16); i++) {
         big_null(&n);
-        memcpy(naux, msg + (i * 4), sizeof(uint32_t) * 4);
-        msg[0] |= 0x01;
-        for (int j = 0; j < 4; j++) {
-            n.value[j] = msg[i];
-        }
+
+        byte_to_array(msg + (i - 1), n.value);
+        n.value[0] |= 0x01;
+
         big_sum(&a, &n, &t1);
         big_mul(&t1, &r, &a);
         big_mod_1305(&a, &p, &t1);
         big_cpy(&t1, &a);
     }
+
     big_sum(&a, &s, &t1);
-    for (i = 0; i < 5; i++) {
-        auth[i] = (uint32_t)t1.value[i];
-    }
-}*/
+    serialize(t1.value, tag, 4);
+}
