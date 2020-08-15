@@ -147,31 +147,11 @@ main(int argc, char const *argv[])
 
 	ec_t curvetest;
 	ec_init_c25519(curvetest);
-	ecp_t PR, PR2, PR3;
-
-	printf("curve double\n");
-	start = clock();
-	ecp_dbl(&curvetest, &curvetest.G, &p, &PR);
-	end = clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	ecp_get_afn(&PR, &p, &r);
-	big_to_hex(&r);
-	printf("%lf\n", cpu_time_used);
-	printf("\n");
-
-	printf("curve add\n");
-	start = clock();
-	ecp_add(&curvetest, &PR, &curvetest.G, &p, &PR2);
-	end = clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	ecp_get_afn(&PR2, &p, &r);
-	big_to_hex(&r);
-	printf("%lf\n", cpu_time_used);
-	printf("\n");
+	ecp_t PR3;
 
 	printf("curve mult\n");
 	start = clock();
-	ecp_mul(&curvetest, &curvetest.G, &l, &p, &PR3);
+	ecp_mul_cst(&curvetest, &curvetest.G, &l, &p, &PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	ecp_get_afn(&PR3, &p, &r);
@@ -184,17 +164,13 @@ main(int argc, char const *argv[])
     big_t prime, priv1, priv2, res1, res2;
     ecp_t own_pbk, own_pbk2, own_pbk3, own_pbk4;
 
-    printf("TESTE\n\n");
+    printf("ECDH Test\nkey1: ");
     big_rnd_dig(&priv1);
 	big_rnd_dig(&priv2);
-	priv1.value[0] &= 0xFFFFFFF8u;
-	priv2.value[0] &= 0xFFFFFFF8u;
-	priv1.value[7] &= 0x7FFFFFFFu;
-	priv2.value[7] &= 0x7FFFFFFFu;
-	priv1.value[7] |= 0x40000000u;
-	priv2.value[7] |= 0x40000000u;
 	big_to_hex(&priv1);
+	printf("\nkey2: ");
 	big_to_hex(&priv2);
+	printf("\n");
     big_null(&prime);
     memcpy(prime.value, P25519, sizeof(uint32_t) * 8);
 
@@ -206,15 +182,13 @@ main(int argc, char const *argv[])
     
     ecp_mul_cst(&curve, &curve.G, &priv2, &prime, &own_pbk3);
     ecp_mul_cst(&curve, &own_pbk3, &priv1, &prime, &own_pbk4);
-    
-	printf("\n\n");
 
     ecp_get_afn(&own_pbk2, &prime, &res1);
     ecp_get_afn(&own_pbk4, &prime, &res2);
+	printf("op1: ");
     big_to_hex(&res1);
-    printf("\n\n");
+    printf("op2: ");
     big_to_hex(&res2);
-    printf("\n\n");
 	
 	return 0;
 }

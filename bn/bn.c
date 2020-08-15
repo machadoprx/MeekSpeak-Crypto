@@ -672,7 +672,7 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 
 	big_eql(&u, &one) ? big_mod(&x1, b, r) : big_mod(&x2, b, r);
 }
-#include <time.h>
+
 void
 big_rnd_dig(big_t *r)
 {
@@ -683,6 +683,9 @@ big_rnd_dig(big_t *r)
 		_rdseed32_step(&rand_digit);
 		r->value[i] = rand_digit & 0xffffffffu;
 	}
+	r->value[0] &= 0xFFFFFFF8u;
+	r->value[7] &= 0x7FFFFFFFu;
+	r->value[7] |= 0x40000000u;
 }
 
 void

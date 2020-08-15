@@ -68,7 +68,7 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
 {
     memset(tag, 0, sizeof(uint8_t) * 17);
     unsigned i;
-    uint32_t poly_key[8];
+    uint32_t poly_key[16];
     big_t p, a, c, r, s, n, t1;
 
     big_null(&c);

@@ -1,46 +1,5 @@
 #include "ecc_25519.h"
 
-void
-ecp_add(ec_t *curve, ecp_t *P, ecp_t *Q, big_t *p, ecp_t *R)
-{
-    ecp_null(R);
-
-    big_t t1, t2, t3;
-
-    big_mul_25519(&P->X, &Q->X, p, &t1);
-    big_mul_25519(&P->Z, &Q->Z, p, &t2);
-    big_sub_25519(&t1, &t2, p, &t3);
-    big_mul_25519(&t3, &t3, p, &t2);
-    big_sum_25519(&t2, &t2, p, &t3);
-    big_sum_25519(&t3, &t3, p, &R->X);
-    big_mul_25519(&P->X, &Q->Z, p, &t2);
-    big_mul_25519(&P->Z, &Q->X, p, &t3);
-    big_sub_25519(&t2, &t3, p, &t1);
-    big_mul_25519(&t1, &t1, p, &t2);
-    big_sum_25519(&t2, &t2, p, &t3);
-    big_sum_25519(&t3, &t3, p, &t1);
-    big_mul_25519(&t1, &curve->G.X, p, &R->Z);
-}
-
-void
-ecp_dbl(ec_t *curve, ecp_t *P, big_t *p, ecp_t *R)
-{
-    ecp_null(R);
-
-    big_t t1, t2, t3, x2, z2, xz;
-    big_mul_25519(&P->X, &P->X, p, &x2);
-    big_mul_25519(&P->Z, &P->Z, p, &z2);
-    big_sub_25519(&x2, &z2, p, &t1);
-    big_mul_25519(&t1, &t1, p, &R->X);
-    big_mul_25519(&P->X, &P->Z, p, &xz);
-    big_mul_25519(&curve->A, &xz, p, &t2);
-    big_sum_25519(&t2, &x2, p, &t1);
-    big_sum_25519(&t1, &z2, p, &t2);
-    big_sum_25519(&xz, &xz, p, &t1);
-    big_sum_25519(&t1, &t1, p, &t3);
-    big_mul_25519(&t3, &t2, p, &R->Z);
-}
-
 static void
 cst_swap(int swap, big_t* a, big_t *b)
 {
@@ -111,41 +70,6 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     cst_swap(swap, &z2, &z3);
     big_cpy(&x2, &R->X);
     big_cpy(&z2, &R->Z);
-}
-
-void
-ecp_mul(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
-{
-    ecp_null(R);
-    // no sanity check for k == 0 / do it in call
-    int bit_len;
-    ecp_t R0, R1, t1;
-    uint8_t kbits[512];
-    big_to_bin(k, &bit_len, kbits);
-    uint8_t *bit = kbits + 1;
-
-    ecp_cpy(P, &R1); // manual first op
-    ecp_cpy(&R1, &R0);
-    ecp_dbl(curve, &R1, p, &t1);
-    ecp_cpy(&t1, &R1);
-    bit_len--;
-
-    for (int i = bit_len; i > 0; i--, bit++) {
-        if (*bit != 0) {
-            ecp_add(curve, &R0, &R1, p, &t1); 
-            ecp_cpy(&t1, &R0);
-            ecp_dbl(curve, &R1, p, &t1);
-            ecp_cpy(&t1, &R1);
-        }
-        else {
-            ecp_add(curve, &R0, &R1, p, &t1);
-            ecp_cpy(&t1, &R1);
-            ecp_dbl(curve, &R0, p, &t1);
-            ecp_cpy(&t1, &R0);
-        }
-    }
-
-    ecp_cpy(&R0, R);
 }
 
 void
