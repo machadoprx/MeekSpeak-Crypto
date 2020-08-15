@@ -93,7 +93,7 @@ padd_str(char *str, char *dest, int padd)
 {
 	char *p = str + (strlen(str) - 1);
 	char *m = dest + padd - 1;
-	memset(dest, 0, sizeof(char) * padd);
+	memset(dest, '0', sizeof(char) * padd);
 
 	while (*p != 0) {
 		*m-- = *p--;
@@ -672,17 +672,16 @@ big_mod_inv(big_t *a, big_t *b, big_t *r)
 
 	big_eql(&u, &one) ? big_mod(&x1, b, r) : big_mod(&x2, b, r);
 }
-
+#include <time.h>
 void
 big_rnd_dig(big_t *r)
 {
 	big_null(r);
-	for (int i = 0; i < 16; i++) {
-		_rdseed32_step(&r->value[i]);
-	}
-	chacha_block(r->value);
-	for (int i = 15; i >= 7; i--) {
-		r->value[i] = 0u;
+	unsigned int rand_digit;
+
+	for (int i = 0; i < 8; i++) {
+		_rdseed32_step(&rand_digit);
+		r->value[i] = rand_digit & 0xffffffffu;
 	}
 }
 

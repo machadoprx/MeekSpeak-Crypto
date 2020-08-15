@@ -18,7 +18,7 @@ main(int argc, char const *argv[])
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", &b);
 	hex_to_big("1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534", &l);
 	hex_to_big("9ac6241f", &c);
-	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faa002f53134d7bb030ed3bbcebcd28b466227cc87766421df596a50c58c21d04c88ebf9ed887b58bf7112dc", &d);
+	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faacc877667c0457f47a3139c5db1b7c0457f47a3139c5db1b421df59658c21d04c88ebf9ed887b58bf7112dc", &d);
 	
 	memcpy(p.value, P25519, sizeof(uint32_t) * 8);
 	memcpy(np.value, N25519, sizeof(uint32_t) * 8);
@@ -171,7 +171,7 @@ main(int argc, char const *argv[])
 
 	printf("curve mult\n");
 	start = clock();
-	ecp_mul_cst(&curvetest, &curvetest.G, &l, &p, &PR3);
+	ecp_mul(&curvetest, &curvetest.G, &l, &p, &PR3);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
 	ecp_get_afn(&PR3, &p, &r);
@@ -180,6 +180,41 @@ main(int argc, char const *argv[])
 	printf("\n");
 	ecp_null(&PR3);
 	big_null(&r);
+
+    big_t prime, priv1, priv2, res1, res2;
+    ecp_t own_pbk, own_pbk2, own_pbk3, own_pbk4;
+
+    printf("TESTE\n\n");
+    big_rnd_dig(&priv1);
+	big_rnd_dig(&priv2);
+	priv1.value[0] &= 0xFFFFFFF8u;
+	priv2.value[0] &= 0xFFFFFFF8u;
+	priv1.value[7] &= 0x7FFFFFFFu;
+	priv2.value[7] &= 0x7FFFFFFFu;
+	priv1.value[7] |= 0x40000000u;
+	priv2.value[7] |= 0x40000000u;
+	big_to_hex(&priv1);
+	big_to_hex(&priv2);
+    big_null(&prime);
+    memcpy(prime.value, P25519, sizeof(uint32_t) * 8);
+
+    ec_t curve;
+    ec_init_c25519(curve);
+    
+    ecp_mul_cst(&curve, &curve.G, &priv1, &prime, &own_pbk);
+    ecp_mul_cst(&curve, &own_pbk, &priv2, &prime, &own_pbk2);
+    
+    ecp_mul_cst(&curve, &curve.G, &priv2, &prime, &own_pbk3);
+    ecp_mul_cst(&curve, &own_pbk3, &priv1, &prime, &own_pbk4);
+    
+	printf("\n\n");
+
+    ecp_get_afn(&own_pbk2, &prime, &res1);
+    ecp_get_afn(&own_pbk4, &prime, &res2);
+    big_to_hex(&res1);
+    printf("\n\n");
+    big_to_hex(&res2);
+    printf("\n\n");
 	
 	return 0;
 }

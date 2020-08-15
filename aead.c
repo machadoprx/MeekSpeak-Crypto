@@ -40,8 +40,7 @@ chacha20_aead_encrypt(uint32_t key[8], uint32_t nonce[3], uint8_t *aad_data, uns
 int
 chacha20_aead_decrypt(uint32_t key[8], uint32_t nonce[3], uint8_t *aad_data, unsigned aad_len, uint8_t *cipher, unsigned plain_len, uint8_t *tag, uint8_t *plain_data)
 {
-    uint8_t tag_test[16];
-    memset(tag_test, 0, sizeof(uint8_t) * 16);
+    uint8_t tag_test[17];
 
     uint32_t mac_len = aad_len + pad_len(aad_len) 
                         + plain_len + pad_len(plain_len) + (2 * sizeof(uint32_t));
@@ -62,7 +61,7 @@ chacha20_aead_decrypt(uint32_t key[8], uint32_t nonce[3], uint8_t *aad_data, uns
     }
 }
 
-int main() {
+/*int main() {
     uint8_t msg[] = "vitao sou eu mesmovitao sou eu mesmovitao sou eu mesmovitao sou";
     int len = 64;
     uint32_t key[] = {0xFFFEDu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu};
@@ -90,4 +89,4 @@ int main() {
     printf("decrypted cipher: ");
     printf("%s\n", (char*)res);
     return 0;
-}
+}*/

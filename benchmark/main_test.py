@@ -40,10 +40,10 @@ def b_mod_inv(a, p):
 
 p = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffed
 a = 0x35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9
-b = 0b11101011001110100111100100101111011101110000110000001010010001100110001010001010111110001011101111100001001000001001101110101000100011000001100000011000101000001100001000101010010011111011001001000000010111000011100000001001100101010011110011001111011111
+b = 0x3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df
 c = 0x9ac6241f
 l = 0x1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534
-d = 0x30591451fdebaf7c7c0457f47a3139c5db1bde9faa002f53134d7bb030ed3bbcebcd28b466227cc87766421df596a50c58c21d04c88ebf9ed887b58bf7112dc
+d = 0x30591451fdebaf7c7c0457f47a3139c5db1bde9faacc877667c0457f47a3139c5db1b7c0457f47a3139c5db1b421df59658c21d04c88ebf9ed887b58bf7112dc
 
 print("MULT")
 start = time()
@@ -68,7 +68,7 @@ print("%0f\n" % (end - start))
 
 print("POWERMOD")
 start = time()
-r = pow(a, c, p)
+r = pow(a, p - 2, p)
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))
@@ -103,7 +103,7 @@ print("%0f\n" % (end - start))
 
 print("AND")
 start = time()
-r = (-0xd0d79435e50d79435e50d79435e50d79435e50d79435e50d79435e50d79435e5) & (0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff)
+r = d & a
 end = time()
 print(hex(r))
 print("%0f\n" % (end - start))

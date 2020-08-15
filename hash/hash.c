@@ -66,7 +66,7 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
 void
 poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_len, uint8_t *tag)
 {
-    memset(tag, 0, sizeof(uint8_t) * 16);
+    memset(tag, 0, sizeof(uint8_t) * 17);
     unsigned i;
     uint32_t poly_key[8];
     big_t p, a, c, r, s, n, t1;
