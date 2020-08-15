@@ -677,11 +677,12 @@ void
 big_rnd_dig(big_t *r)
 {
 	big_null(r);
-	unsigned int rand_digit;
-
+	FILE *fpointer = fopen("/dev/urandom", "rb");
 	for (int i = 0; i < 8; i++) {
-		_rdseed32_step(&rand_digit);
-		r->value[i] = rand_digit & 0xffffffffu;
+		int read = fread(&r->value[i], sizeof(r->value[i]), 1, fpointer);
+		if (read == 0) {
+			return;
+		}
 	}
 	r->value[0] &= 0xFFFFFFF8u;
 	r->value[7] &= 0x7FFFFFFFu;

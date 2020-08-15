@@ -23,16 +23,6 @@ main(int argc, char const *argv[])
 	memcpy(p.value, P25519, sizeof(uint32_t) * 8);
 	memcpy(np.value, N25519, sizeof(uint32_t) * 8);
 
-	printf("Mod\n");
-	start = clock();
-	big_mod_25519(&d, &p, &r);
-	end = clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	big_to_hex(&r);
-	big_null(&r);
-	printf("%lf\n", cpu_time_used);
-	printf("\n");
-
 	printf("Mult\n");
 	start = clock();
     big_mul(&a, &b, &r);

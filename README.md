@@ -1,10 +1,24 @@
 # MeekSpeak-Crypto
-Mini crypto and big number suite. Implements elliptic curve cryptography (curve25519, constant time), rfc7539(chacha20 and poly1305), eccdh key exchange, and big number operations, except division. 
+Mini Crypto and big number suite with x25519 and AEAD_ChaCha20 (RFC7748 and RFC 7539).
 
-This code is a toy project, for learning purposes. Do not use it in production.
+Implemented features:
+
+    * Elliptic Curve Point Multiplication as in RFC7748 (x25519 in constant time)
+    * AEAD_ChaCha20 encryption as described in RFC7539
+    * Fixed precision BigNumber library
+    * Runs entirely on stack
+    * No library dependency in Linux System
 
 # How to use
 
-Compile the code, after cloning the repository, with make.
+Compile the code, after cloning the repository, with make:
 
-The functions uses are described in the main file, in benchmark folder.
+```
+make aead // for Elliptic Curve Diffie Hellman + AEAD_ChaCha20 Encrypt example
+
+make bench // for benchmark and debug
+
+make run
+```
+
+The functions uses are described in the main file, in benchmark folder and in the ecdh_aead_example.c

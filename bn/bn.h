@@ -31,8 +31,6 @@ typedef struct _big_t{
 	bool 					sign;
 }big_t;
 
-#define big_new(a)			a = calloc(1, sizeof(big_t));
-
 #define big_cpy(a, b)		memcpy(((big_t*)b)->value, ((big_t*)a)->value, BIG_WORDS_SIZE); 	\
 							((big_t*)b)->sign = ((big_t*)a)->sign;								
 
