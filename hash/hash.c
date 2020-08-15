@@ -44,42 +44,18 @@ make_state(uint32_t state[], uint32_t key[], uint32_t counter, uint32_t nonce[])
     state[15] = nonce[2];
 }
 
-static inline void
-serialize(uint32_t state[], uint8_t stream[], unsigned len)
-{
-    for (int i = 0; i < len; i++) {
-        for (int j = 0; j < 4; j++) {
-            int stream_index = (len - 1 - i) * 4 + (3 - j);
-            stream[stream_index] = (uint8_t)((state[i] >> (j * 8)) & 0xFF);
-        }
-    }
-}
-
-static inline void
-byte_to_array(uint8_t *stream, uint32_t *arr)
-{
-    for (int i = 0; i < 4; i++) {
-        uint32_t acc = 0;
-        uint32_t shift = 0;
-        for (int j = 3; j >= 0; j--) {
-            acc += (stream[i * 4 + j] << shift);
-            shift += 8;
-        }
-        arr[i] = acc;
-    }
-}
-
 void
 chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, unsigned len)
 {
-    int range = (int)(len / 64) - 1;
+    // only for msg with msg.len % 64 == 0, user must pad plain_text
+    memset(cipher, 0, sizeof(uint8_t) * len);
+    int range = (int)(len / 64);
     for (int j = 0; j < range; j++) {
         uint32_t state[16];
         uint8_t key_stream[64];
-        make_state(state, key, j, nonce);
+        make_state(state, key, j + 1, nonce);
         chacha_block(state);
         serialize(state, key_stream, 16);
-
         int index = j * 64;
         for (int i = 0; i < 64; i++) {
             cipher[index + i] = plain[index + i] ^ key_stream[i]; 
@@ -88,8 +64,9 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
 }
 
 void
-poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *msg, unsigned msg_len, uint8_t *tag)
+poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_len, uint8_t *tag)
 {
+    memset(tag, 0, sizeof(uint8_t) * 16);
     unsigned i;
     uint32_t poly_key[8];
     big_t p, a, c, r, s, n, t1;
@@ -110,10 +87,10 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *msg, unsigned msg_len, u
     hex_to_big("0ffffffc0ffffffc0ffffffc0fffffff", &clamp);
     big_and(&c, &clamp, &r);
 
-    for (i = 1; i <= (unsigned)ceil(msg_len / 16); i++) {
+    for (i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
         big_null(&n);
 
-        byte_to_array(msg + (i - 1), n.value);
+        byte_to_array(mac_data + (i - 1), n.value);
         n.value[0] |= 0x01;
 
         big_sum(&a, &n, &t1);

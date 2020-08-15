@@ -677,15 +677,12 @@ void
 big_rnd_dig(big_t *r)
 {
 	big_null(r);
-	uint32_t random[16];
-	//uint32_t rand_digit;
 	for (int i = 0; i < 16; i++) {
-		//_rdseed32_step(&rand_digit);
-		random[i] = rand() % 0xFFFFFFFFu;
+		_rdseed32_step(&r->value[i]);
 	}
-	chacha_block(random);
-	for (int i = 0; i < 8; i++) {
-		r->value[i] = random[i];
+	chacha_block(r->value);
+	for (int i = 15; i >= 7; i--) {
+		r->value[i] = 0u;
 	}
 }
 

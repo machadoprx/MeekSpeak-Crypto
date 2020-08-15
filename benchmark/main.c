@@ -180,42 +180,6 @@ main(int argc, char const *argv[])
 	printf("\n");
 	ecp_null(&PR3);
 	big_null(&r);
-
-	/*printf("radn num, curve mult and poly1305\n");
-	start = clock();
-	big_to_hex(&np);
-	big_rnd_dig(&r);
-	r.value[7] &= 0x7FFFFFFFull;
-	while (big_gth_uns(&r, &np) > 0) {
-    	big_rnd_dig(&r);
-		r.value[7] &= 0x7FFFFFFFull;
-	}
-	ecp_mul_cst(&curvetest, &curvetest.G, &r, &p, &PR3);
-	uint32_t nonce[3];
-	uint32_t msg[16];
-	uint32_t auth[5];
-	nonce[0] = (uint32_t)r.value[7];
-	nonce[1] = (uint32_t)r.value[5];
-	nonce[2] = (uint32_t)r.value[3];
-	ecp_get_afn(&PR3, &p, &r);
-	big_to_hex(&r);
-
-	uint32_t keykox[8];
-	for (int i = 0; i < 8; i++){
-		keykox[i] = (uint32_t)r.value[i];
-		msg[i] = (uint32_t)d.value[i];
-		msg[i + 8] = (uint32_t)d.value[i + 8];
-	}
-	poly1305_mac(keykox, nonce, msg, 64, auth);
-	big_null(&r);
-	for (int i = 0; i < 5; i++){
-		r.value[i] = (dig_t)auth[i];
-	}
-	big_to_hex(&r);
-	end = clock();
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-	printf("%lf\n", cpu_time_used);
-	printf("\n");*/
-
+	
 	return 0;
 }
