@@ -14,18 +14,18 @@ big_get_len(big_t *a)
 }
 
 void
-big_to_bin(big_t *a, int *lenght, uint8_t bin[512])
+big_to_bin(big_t *a, unsigned *lenght, uint8_t bin[255])
 {
 	int k = big_get_len(a);	
 
 	uint8_t *p = bin;
 	uint32_t *ap = a->value + k, t = *(ap), mask = 0x80000000u;
-	memset(bin, 0, 512 * sizeof(uint8_t));
-	int mswbits = 0;
+	memset(bin, 0, 255 * sizeof(uint8_t));
+	*lenght = k * BIG_DIGIT_BITS;
 
 	while (t > 0) {
 		t = t >> 1;
-		mswbits++;
+		(*lenght)++;
 	}
 
 	while (!(mask & (*ap))) {
@@ -33,14 +33,12 @@ big_to_bin(big_t *a, int *lenght, uint8_t bin[512])
 	}
 
 	for (; ap >= a->value; ap--) {
-		while (mask != 0u) { //cst time?
+		while (mask != 0u) {
 			*(p++) = (uint8_t)((mask & (*ap)) / mask);
 			mask = mask >> 1;
 		}
 		mask = 0x80000000u;
 	}
-
-	*lenght = mswbits + (k * BIG_DIGIT_BITS);
 }
 
 uint32_t
@@ -205,8 +203,8 @@ big_mnt_pow_25519(big_t *a, big_t *b, big_t *r)
 	A.value[0] = 0x26u;
 	beta.sign = true;
 
-	int b_lenght;
-	uint8_t bin_b[512];
+	unsigned b_lenght;
+	uint8_t bin_b[255];
 	big_to_bin(b, &b_lenght, bin_b);
 	uint8_t *bit = bin_b;
 	big_mul(a, &R, &t);
@@ -250,22 +248,20 @@ big_sum(big_t *a, big_t *b, big_t *r)
 		gp = b->value;
 		int t = n; n = m; m = t;
 	}
-	
-	uint32_t *stop1 = r->value + n + 1, *stop2 = r->value + m;
 
-	for (; rp <= stop2; lp++, gp++, rp++) {
+	for (; rp <= r->value + m; lp++, gp++, rp++) {
 		w = carry + (uint64_t)(*gp) + (uint64_t)(*lp);
 		*rp = (uint32_t)(w & BIG_BASE_M);
 		carry = w >> BIG_DIGIT_BITS;
 	}
 
-	while (rp <= stop1) {
+	while (rp <= r->value + n + 1) {
 		w = carry + (uint64_t)(*(gp++));
 		*(rp++) = (uint32_t)(w & BIG_BASE_M);
 		carry = w >> BIG_DIGIT_BITS;
 	}
 
-	r->sign = a->sign ? true : false;
+	r->sign = a->sign;
 }
 
 void
@@ -306,17 +302,15 @@ big_sub(big_t *a, big_t *b, big_t *r)
 	}
 
 	uint64_t w = 0;
-	uint32_t *stop1 = r->value + n, *stop2 = r->value + m, shift = ((8 * sizeof(uint64_t)) - 1);
+	uint32_t shift = ((8 * sizeof(uint64_t)) - 1);
 
-	for (; rp <= stop2; gp++, lp++, rp++) {
-
+	for (; rp <= r->value + m; gp++, lp++, rp++) {
 		w = (uint64_t)(*gp) - (uint64_t)(*lp) - borrow;
 		borrow = w >> shift;
 		*rp = (uint32_t)(w & BIG_BASE_M);
 	}
 
-	while (rp <= stop1) {
-
+	while (rp <= r->value + n) {
 		w = (uint64_t)(*gp) - borrow;
 		borrow = w >> shift;
 		*(rp++) = (uint32_t)(w & BIG_BASE_M);
@@ -335,16 +329,16 @@ big_eql(big_t *a, big_t *b)
 
 	int n = big_get_len(a);
 	int m = big_get_len(b);
-	int g = n >= m ? n : m;
-	uint32_t *ap = a->value, *bp = b->value, *stop = a->value + g;
+	if (n != m)
+		return false;
+	uint32_t *ap = a->value, *bp = b->value, *stop = a->value + n;
 
+	uint32_t err = 0;
 	for (; ap <= stop; ap++, bp++) {
-		if (*ap != *bp) {
-			return false;
-		}
+		err += *ap ^ *bp;
 	}
 
-	return true;
+	return err == 0 ? true : false;
 }
 
 void
@@ -677,13 +671,14 @@ void
 big_rnd_dig(big_t *r)
 {
 	big_null(r);
-	FILE *fpointer = fopen("/dev/urandom", "rb");
+	FILE *fp = fopen("/dev/urandom", "rb");
 	for (int i = 0; i < 8; i++) {
-		int read = fread(&r->value[i], sizeof(r->value[i]), 1, fpointer);
+		int read = fread(&r->value[i], sizeof(r->value[i]), 1, fp);
 		if (read == 0) {
 			return;
 		}
 	}
+	fclose(fp);
 	r->value[0] &= 0xFFFFFFF8u;
 	r->value[7] &= 0x7FFFFFFFu;
 	r->value[7] |= 0x40000000u;

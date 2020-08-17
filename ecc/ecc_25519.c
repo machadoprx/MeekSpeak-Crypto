@@ -1,7 +1,7 @@
 #include "ecc_25519.h"
 
-static void
-cst_swap(int swap, big_t* a, big_t *b)
+static inline void
+cst_swap(uint8_t swap, big_t* a, big_t *b)
 {
     uint32_t dummy, mask = 0 - swap;
 
@@ -13,20 +13,12 @@ cst_swap(int swap, big_t* a, big_t *b)
 }
 
 void
-ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
+ecp_mul_cst(big_t *Px, big_t *k, big_t *p, big_t *Rx)
 {
-    ecp_null(R);
+    big_null(Rx);
 
-    int bit_len;
     big_t x1, x2, z2, x3, z3, a24;
-    uint32_t swap = 0;
-    uint8_t kbits[512];
-    big_to_bin(k, &bit_len, kbits);
-    uint8_t *bit = kbits;
-    big_t afn;
-    ecp_get_afn(P, p, &afn);
-    big_null(&x1);
-    big_null(&x3);
+    uint8_t swap = 0;
     big_null(&a24);
     big_null(&x2);
     big_null(&z2);
@@ -34,18 +26,22 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
     (*a24.value) = 121665u;
     (*x2.value) = 0x01u;
     (*z3.value) = 0x01u;
+    big_cpy(Px, &x1);
+    big_cpy(Px, &x3);
 
-    big_cpy(&afn, &x1);
-    big_cpy(&afn, &x3);
+    big_t A, AA, B, BB, C, D, E, DA, CB, t1, t2;
+    unsigned bit_len;
+    uint8_t kbits[255];
+    big_to_bin(k, &bit_len, kbits);
+    uint8_t *bit = kbits;
 
     for (int i = bit_len; i > 0; i--, bit++) {
-        
-        swap ^= (uint32_t)*bit;
+
+        swap ^= *bit;
         cst_swap(swap, &x2, &x3);
         cst_swap(swap, &z2, &z3);
-        swap = (uint32_t)*bit;
+        swap = *bit;
 
-        big_t A, AA, B, BB, C, D, E, DA, CB, t1, t2;
         big_sum_25519(&x2, &z2, p, &A);
         big_mul_25519(&A, &A, p, &AA);
         big_sub_25519(&x2, &z2, p, &B);
@@ -68,17 +64,7 @@ ecp_mul_cst(ec_t *curve, ecp_t *P, big_t *k, big_t *p, ecp_t *R)
 
     cst_swap(swap, &x2, &x3);
     cst_swap(swap, &z2, &z3);
-    big_cpy(&x2, &R->X);
-    big_cpy(&z2, &R->Z);
-}
 
-void
-ecp_get_afn(ecp_t *P, big_t *p, big_t *r)
-{
-    big_null(r);
-
-    big_t t1, t2;
-    big_mod_inv(&P->Z, p, &t1);
-    big_mul(&P->X, &t1, &t2);
-    big_mod_25519(&t2, p, r);
+    big_mod_inv(&z2, p, &t1);
+    big_mul_25519(&x2, &t1, p, Rx);
 }

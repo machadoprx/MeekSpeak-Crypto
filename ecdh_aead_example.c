@@ -5,8 +5,8 @@
 
 int main() {
 
-    big_t prime, priv1, priv2, res1, res2;
-    ecp_t own_pbk, own_pbk2, own_pbk3, own_pbk4;
+    big_t prime, priv1, priv2;
+    big_t own_pbk, own_pbk2, own_pbk3, own_pbk4;
 
     big_rnd_dig(&priv1);
 	big_rnd_dig(&priv2);
@@ -19,26 +19,24 @@ int main() {
     big_null(&prime);
     memcpy(prime.value, P25519, sizeof(uint32_t) * 8);
 
-    ec_t curve;
-    ec_init_c25519(curve);
+    big_t Gx;
+    big_null(&Gx);
+    Gx.value[0] = Gx_25519;
+    ecp_mul_cst(&Gx, &priv1, &prime, &own_pbk);
+    ecp_mul_cst(&own_pbk, &priv2, &prime, &own_pbk2);
     
-    ecp_mul_cst(&curve, &curve.G, &priv1, &prime, &own_pbk);
-    ecp_mul_cst(&curve, &own_pbk, &priv2, &prime, &own_pbk2);
-    
-    ecp_mul_cst(&curve, &curve.G, &priv2, &prime, &own_pbk3);
-    ecp_mul_cst(&curve, &own_pbk3, &priv1, &prime, &own_pbk4);
+    ecp_mul_cst(&Gx, &priv2, &prime, &own_pbk3);
+    ecp_mul_cst(&own_pbk3, &priv1, &prime, &own_pbk4);
 
-    ecp_get_afn(&own_pbk2, &prime, &res1);
-    ecp_get_afn(&own_pbk4, &prime, &res2);
 	printf("Public Key1: ");
-    big_to_hex(&own_pbk.X);
+    big_to_hex(&own_pbk);
     printf("Public Key2: ");
-    big_to_hex(&own_pbk3.X);
+    big_to_hex(&own_pbk3);
     printf("\nVerifying shared secret...\n");
 
     uint32_t err = 0;
     for (int i = 0; i < 8; i++)
-        err += res1.value[i] ^ res2.value[i];
+        err += own_pbk2.value[i] ^ own_pbk4.value[i];
     if (err == 0) {
         printf("Equal secret: ");
     }
@@ -46,14 +44,14 @@ int main() {
         printf("Error\n");
         exit(1);
     }
-    big_to_hex(&res1);
-    printf("\n\n");
+    big_to_hex(&own_pbk2);
+    printf("\n");
     
     printf("\t\t\t --- AEAD - ChaCha20 Encrypt ---\n");
 
     uint8_t msg[] = "vitao sou eu mesmovitao sou eu mesmovitao sou eu mesmovitao sou";
     int len = 64;
-    uint32_t *key = res1.value;
+    uint32_t *key = own_pbk2.value;
     uint32_t nonce[] = {0x0u, 0x4u, 0x0u};
     uint8_t cipher[len];
     uint8_t tag[16];
