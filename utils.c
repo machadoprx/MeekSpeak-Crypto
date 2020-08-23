@@ -18,7 +18,7 @@ u8_to_u32(uint8_t *stream, uint32_t *arr, unsigned len)
         uint32_t acc = 0;
         uint32_t shift = 0;
         for (int j = 3; j >= 0; j--) {
-            acc += (stream[i * 4 + j] << shift);
+            acc += (uint32_t)(stream[i * 4 + j] << shift);
             shift += 8;
         }
         arr[i] = acc;

@@ -87,11 +87,13 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
     hex_to_big("0ffffffc0ffffffc0ffffffc0fffffff", &clamp);
     big_and(&c, &clamp, &r);
 
-    for (i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
-        big_null(&n);
+    big_t two_power_128;
+    hex_to_big("100000000000000000000000000000000", &two_power_128);
 
-        u8_to_u32(mac_data + (i - 1), n.value, 4);
-        n.value[0] |= 0x01;
+    for (i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
+        big_null(&t1);
+        u8_to_u32(mac_data + (i - 1) * 16, t1.value, 4);
+        big_sum(&t1, &two_power_128, &n);
 
         big_sum(&a, &n, &t1);
         big_mul(&t1, &r, &a);
