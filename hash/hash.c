@@ -4,10 +4,10 @@ void
 chacha_block(uint32_t state[])
 {
 	uint32_t old[16];
-
+    int i;
     memcpy(old, state, sizeof(uint32_t) * 16);
 
-	for (int i = 0; i < ROUNDS; i++) {
+	for (i = 0; i < ROUNDS; i++) {
 		QR(old[0], old[4], old[8 ], old[12]); 
 		QR(old[1], old[5], old[9 ], old[13]); 
 		QR(old[2], old[6], old[10], old[14]); 
@@ -18,7 +18,7 @@ chacha_block(uint32_t state[])
 		QR(old[3], old[4], old[9 ], old[14]);
 	}
 
-	for (int i = 0; i < 16; ++i) {
+	for (i = 0; i < 16; ++i) {
         state[i] += old[i];
     }
 }
@@ -63,14 +63,22 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
     }
 }
 
+static inline void
+clamp(uint32_t *arr)
+{
+    arr[0] &= 0x0fffffffu;
+    arr[1] &= 0x0ffffffcu;
+    arr[2] &= 0x0ffffffcu;
+    arr[3] &= 0x0ffffffcu;
+}
+
 void
 poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_len, uint8_t *tag)
 {
     memset(tag, 0, sizeof(uint8_t) * 17);
     uint32_t poly_key[16];
-    big_t p, a, c, r, s, n, t1;
+    big_t p, a, r, s, n, t1;
 
-    big_null(&c);
     big_null(&p);
     big_null(&s);
     big_null(&a);
@@ -78,15 +86,13 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
     make_state(poly_key, key, 0, nonce);
     chacha_block(poly_key);
 
-    memcpy(c.value, poly_key, sizeof(uint32_t) * 4);
+    memcpy(r.value, poly_key, sizeof(uint32_t) * 4);
     memcpy(s.value, poly_key + 4, sizeof(uint32_t) * 4);
     memcpy(p.value, P1305, sizeof(uint32_t) * 5);
 
-    big_t clamp;
-    hex_to_big("0ffffffc0ffffffc0ffffffc0fffffff", &clamp);
-    big_and(&c, &clamp, &r);
+    clamp(r.value);
 
-    for (unsigned i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
+    for (int i = 1; i <= (int)ceil(mac_len / 16); i++) {
         big_null(&n);
         u8_to_u32(mac_data + (i - 1) * 16, n.value, 4);
         n.value[5] = 0x01u;
