@@ -67,7 +67,6 @@ void
 poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_len, uint8_t *tag)
 {
     memset(tag, 0, sizeof(uint8_t) * 17);
-    unsigned i;
     uint32_t poly_key[16];
     big_t p, a, c, r, s, n, t1;
 
@@ -87,13 +86,10 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
     hex_to_big("0ffffffc0ffffffc0ffffffc0fffffff", &clamp);
     big_and(&c, &clamp, &r);
 
-    big_t two_power_128;
-    hex_to_big("100000000000000000000000000000000", &two_power_128);
-
-    for (i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
-        big_null(&t1);
-        u8_to_u32(mac_data + (i - 1) * 16, t1.value, 4);
-        big_sum(&t1, &two_power_128, &n);
+    for (unsigned i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
+        big_null(&n);
+        u8_to_u32(mac_data + (i - 1) * 16, n.value, 4);
+        n.value[5] = 0x01u;
 
         big_sum(&a, &n, &t1);
         big_mul(&t1, &r, &a);
