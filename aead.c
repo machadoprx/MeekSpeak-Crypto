@@ -20,9 +20,9 @@ make_mac_data(uint8_t *aad_data, unsigned aad_len, uint8_t *cipher, unsigned pla
         *mac_ptr = cipher[i];
     }
     mac_ptr += pad_len(plain_len);
-    serialize(&aad_len, mac_ptr, 1);
+    u32_to_u8(&aad_len, mac_ptr, 1);
     mac_ptr += sizeof(uint32_t);
-    serialize(&plain_len, mac_ptr, 1);
+    u32_to_u8(&plain_len, mac_ptr, 1);
 }
 
 void
@@ -49,7 +49,7 @@ chacha20_aead_decrypt(uint32_t key[8], uint32_t nonce[3], uint8_t *aad_data, uns
     poly1305_mac(key, nonce, mac_data, mac_len, tag_test);
 
     int cmp = 0;
-    for (unsigned i = 0; i < 16; i++) {
+    for (unsigned i = 0; i < 17; i++) {
         cmp += tag_test[i] ^ tag[i];
     }
     if (cmp != 0) {

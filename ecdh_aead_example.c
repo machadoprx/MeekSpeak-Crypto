@@ -54,9 +54,9 @@ int main() {
     uint32_t *key = own_pbk2.value;
     uint32_t nonce[] = {0x0u, 0x4u, 0x0u};
     uint8_t cipher[len];
-    uint8_t tag[16];
+    uint8_t tag[17];
     memset(cipher, 0, len);
-    memset(tag, 0, 16);
+    memset(tag, 0, 17);
 
     printf("Original msg: ");
     printf("%s\n", (char*)msg);

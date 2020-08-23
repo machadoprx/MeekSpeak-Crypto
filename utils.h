@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-void serialize(uint32_t state[], uint8_t stream[], unsigned len);
-void byte_to_array(uint8_t *stream, uint32_t *arr);
+void u32_to_u8(uint32_t *state, uint8_t *stream, unsigned len);
+void u8_to_u32(uint8_t *stream, uint32_t *arr, unsigned len);
 
 #endif

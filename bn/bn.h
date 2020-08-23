@@ -6,7 +6,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <immintrin.h>
 #include "../hash/hash.h"
 
 // Values for Curve25519 and Poly1305

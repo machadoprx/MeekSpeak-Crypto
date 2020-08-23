@@ -55,7 +55,7 @@ chacha_enc(uint32_t key[8], uint32_t nonce[3], uint8_t *plain, uint8_t *cipher, 
         uint8_t key_stream[64];
         make_state(state, key, j + 1, nonce);
         chacha_block(state);
-        serialize(state, key_stream, 16);
+        u32_to_u8(state, key_stream, 16);
         int index = j * 64;
         for (int i = 0; i < 64; i++) {
             cipher[index + i] = plain[index + i] ^ key_stream[i]; 
@@ -90,7 +90,7 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
     for (i = 1; i <= (unsigned)ceil(mac_len / 16); i++) {
         big_null(&n);
 
-        byte_to_array(mac_data + (i - 1), n.value);
+        u8_to_u32(mac_data + (i - 1), n.value, 4);
         n.value[0] |= 0x01;
 
         big_sum(&a, &n, &t1);
@@ -100,5 +100,5 @@ poly1305_mac(uint32_t key[], uint32_t nonce[], uint8_t *mac_data, unsigned mac_l
     }
 
     big_sum(&a, &s, &t1);
-    serialize(t1.value, tag, 4);
+    u32_to_u8(t1.value, tag, 4);
 }
