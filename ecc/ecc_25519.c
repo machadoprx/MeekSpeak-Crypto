@@ -1,9 +1,47 @@
 #include "ecc_25519.h"
 
+void
+get_rnd_bytes(uint8_t *bytes)
+{
+    FILE *fp = fopen("/dev/urandom", "rb");
+	for (int i = 0; i < 32; i++) {
+		int read = fread(&bytes[i], sizeof(uint8_t), 1, fp);
+		if (read == 0) {
+			return;
+		}
+	}
+	fclose(fp);
+}
+
+void
+mask_bytes(uint8_t *bytes)
+{
+	bytes[0] &= 248;
+	bytes[31] &= 127;
+	bytes[31] |= 64;
+}
+
+void
+get_scalar25519(uint32_t *scalar)
+{
+    uint8_t bytes[32];
+    get_rnd_bytes(bytes);
+	mask_bytes(bytes);
+	u8_to_u32(bytes, scalar, 8);
+}
+
+void
+decode_uc(uint32_t *uc)
+{
+    uint8_t bytes[32];
+    u32_to_u8(uc, bytes, 8);
+	u8_to_u32(bytes, uc, 8);
+}
+
 static inline void
 cst_swap(uint8_t swap, big_t* a, big_t *b)
 {
-    uint32_t dummy, mask = 0 - swap;
+    uint32_t dummy, mask = 0u - swap;
 
     for (int i = 0; i < 8; i++) {
         dummy = mask & (a->value[i] ^ b->value[i]);

@@ -8,8 +8,11 @@ int main() {
     big_t prime, priv1, priv2;
     big_t own_pbk, own_pbk2, own_pbk3, own_pbk4;
 
-    big_rnd_dig(&priv1);
-	big_rnd_dig(&priv2);
+    big_null(&priv1);
+    big_null(&priv2);
+
+    get_scalar25519(priv1.value);
+    get_scalar25519(priv2.value);
 
     printf("\t\t\t --- ECDH - Key Agreement ---\nPrivate key1: ");
 	big_to_hex(&priv1);
@@ -23,10 +26,14 @@ int main() {
     big_null(&Gx);
     Gx.value[0] = Gx_25519;
     ecp_mul_cst(&Gx, &priv1, &prime, &own_pbk);
+
     ecp_mul_cst(&own_pbk, &priv2, &prime, &own_pbk2);
-    
+    decode_uc(own_pbk2.value);
+
     ecp_mul_cst(&Gx, &priv2, &prime, &own_pbk3);
+
     ecp_mul_cst(&own_pbk3, &priv1, &prime, &own_pbk4);
+    decode_uc(own_pbk4.value);
 
 	printf("Public Key1: ");
     big_to_hex(&own_pbk);

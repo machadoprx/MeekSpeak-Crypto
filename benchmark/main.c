@@ -16,7 +16,7 @@ main(int argc, char const *argv[])
 
 	hex_to_big("35fedf799f98ffaefb6fb91d77db7dc8fc8ff23fb5dc8fd77db7dc8ff3fc23f9", &a);
 	hex_to_big("3ace9e4bddc3029198a2be2ef84826ea23060628308a93ec90170e02654f33df", &b);
-	hex_to_big("1790f520c6645bdc6192b7da46c9382a5b9d8bf3e856a96e2c7018bc46f38534", &l);
+	hex_to_big("77076d0a7318a57d3c16c17251b26645df4c2f87ebc0992ab177fba51db92c2a", &l);
 	hex_to_big("9ac6241f", &c);
 	hex_to_big("30591451fdebaf7c7c0457f47a3139c5db1bde9faacc877667c0457f47a3139c5db1b7c0457f47a3139c5db1b421df59658c21d04c88ebf9ed887b58bf7112dc", &d);
 	
@@ -140,10 +140,20 @@ main(int argc, char const *argv[])
     big_null(&Gx);
     Gx.value[0] = Gx_25519;
 
+	/*
+		if bits % 8:
+		u[-1] &= (1<<(bits%8))-1
+	*/
+	uint8_t bytes[32];
+	u32_to_u8(l.value, bytes, 8);
+	big_null(&l);
+	mask_bytes(bytes);
+	u8_to_u32(bytes, l.value, 8);
 	start = clock();
 	ecp_mul_cst(&Gx, &l, &p, &r);
 	end = clock();
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+	decode_uc(r.value);
 	big_to_hex(&r);
 	printf("%lf\n", cpu_time_used);
 	printf("\n");
